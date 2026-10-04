@@ -18,7 +18,8 @@ An enterprise-grade, multi-tenant white-label fashion e-commerce platform built 
 - [Multi-Tenant Data Isolation](#-multi-tenant-data-isolation)
 - [Tech Stack](#-tech-stack)
 - [Quick Start & Local Setup](#-quick-start--local-setup)
-- [Local Multi-Tenant Testing (`/etc/hosts`)](#-local-multi-tenant-testing-etchosts)
+- [Local Multi-Tenant Testing](#-local-multi-tenant-testing-etchosts)
+- [Running Tests](#-running-tests)
 - [License](#-license)
 
 ---
@@ -27,8 +28,9 @@ An enterprise-grade, multi-tenant white-label fashion e-commerce platform built 
 
 Based on the `FashionOS` architecture blueprint, below is the implementation file structure:
 
+```text
 FashionOS/
-├── package.json                 # Root npm workspace
+├── package.json                 # Root pnpm workspace
 ├── pnpm-workspace.yaml          # Workspace package discovery
 ├── .gitignore
 ├── .env.example
@@ -141,7 +143,7 @@ FashionOS/
 │   ├── migrations/              # Alembic Database Migrations
 │   ├── schemas/
 │   ├── seeds/
-│   └── rls-policies/           # PostgreSQL RLS Isolation Scripts
+│   └── rls-policies/            # PostgreSQL RLS Isolation Scripts
 │
 ├── docs/
 │   ├── architecture/
@@ -163,6 +165,7 @@ FashionOS/
 │   └── contracts/
 │
 └── scripts/
+```
 
 ---
 
@@ -170,22 +173,24 @@ FashionOS/
 
 Every major business domain in `apps/api/app/modules/<module>/` follows a standardized internal pattern:
 
-apps/api/app/modules//
+```text
+apps/api/app/modules/<module>/
 ├── router.py         # API endpoints
 ├── schemas.py        # Request/response validation
 ├── service.py        # Core business logic
 ├── repository.py     # Database operations
 ├── models.py         # SQLAlchemy models
 ├── events.py         # Domain/integration events
-└── init.py
+└── __init__.py
+```
 
 ---
 
 ## 📦 Shared Packages
 
-* **`packages/ui`:** Reusable React design-system components (Button, Input, Modal, Card, Table, Drawer, Toast, Form controls)[cite: 5].
-* **`packages/shared-types`:** Shared TypeScript types, generated OpenAPI types, and Zod validation schemas[cite: 5].
-* **`packages/config`:** Shared ESLint, TypeScript, and Tailwind configurations across all apps[cite: 5].
+- **`packages/ui`:** Reusable React design-system components (Button, Input, Modal, Card, Table, Drawer, Toast, Form controls).
+- **`packages/shared-types`:** Shared TypeScript types, generated OpenAPI types, and Zod validation schemas.
+- **`packages/config`:** Shared ESLint, TypeScript, and Tailwind configurations across all apps.
 
 ---
 
@@ -193,74 +198,121 @@ apps/api/app/modules//
 
 | Phase | Task | Deliverable |
 | :--- | :--- | :--- |
-| **01** | **Workspace setup** | Root `package.json` + `pnpm-workspace.yaml` + shared config[cite: 5] |
-| **02** | **Web foundation** | `apps/web` package.json + Vite + TypeScript + React + Routing[cite: 5] |
-| **03** | **Design system** | `packages/ui` + Tailwind + Common UI components[cite: 5] |
-| **04** | **API foundation** | FastAPI core + DB session + Auth + Tenancy + Error handling[cite: 5] |
-| **05** | **First business modules** | `shops` → `catalog` → `customers` → `inventory` → `orders`[cite: 5] |
-| **06** | **Frontend features** | `catalog` → `cart` → `checkout` → `orders` → `owner dashboard`[cite: 5] |
-| **07** | **Payments & Khata** | Razorpay, Payment state, Customer credit/Khata[cite: 5] |
-| **08** | **AI + worker** | AI service + Celery + Redis + Scheduled jobs[cite: 5] |
-| **09** | **Tally cloud** | Tally module + Windows `tally-bridge`[cite: 5] |
-| **10** | **Hardening** | RLS policies, Tenant isolation, Contract tests, E2E & Load tests[cite: 5] |
+| **01** | **Workspace setup** | Root `package.json` + `pnpm-workspace.yaml` + shared config |
+| **02** | **Web foundation** | `apps/web` package.json + Vite + TypeScript + React + Routing |
+| **03** | **Design system** | `packages/ui` + Tailwind + Common UI components |
+| **04** | **API foundation** | FastAPI core + DB session + Auth + Tenancy + Error handling |
+| **05** | **First business modules** | `shops` → `catalog` → `customers` → `inventory` → `orders` |
+| **06** | **Frontend features** | `catalog` → `cart` → `checkout` → `orders` → `owner dashboard` |
+| **07** | **Payments & Khata** | Razorpay, Payment state, Customer credit/Khata |
+| **08** | **AI + worker** | AI service + Celery + Redis + Scheduled jobs |
+| **09** | **Tally cloud** | Tally module + Windows `tally-bridge` |
+| **10** | **Hardening** | RLS policies, Tenant isolation, Contract tests, E2E & Load tests |
 
 ---
 
-## 🔒 Multi-Tenant Data Isolation
+## 🔐 Multi-Tenant Data Isolation
 
-Data isolation is guaranteed at the database level using **PostgreSQL Row-Level Security (RLS)**.
+FashionOS uses a **shared database, shared schema** model. Every tenant-owned table carries a `shop_id` column, and PostgreSQL **Row-Level Security (RLS)** policies guarantee that one shop can never read or write another shop's data.
 
-```sql
--- PostgreSQL RLS Policy Enforcement
-ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+- The tenant is resolved from the incoming domain (e.g. `sethifashion.local`) by the API.
+- The resolved `shop_id` is set on the database session before any query runs.
+- RLS policies in `database/rls-policies/` enforce isolation at the database level, independent of application code.
+- Isolation is verified by the test suite in `tests/tenant-isolation/`.
 
-CREATE POLICY tenant_isolation_policy ON products
-    FOR ALL
-    USING (shop_id = current_setting('app.current_shop_id')::uuid);
+---
 
-🛠 Tech StackLayerTechnologyMonorepo Managementpnpm Workspaces   Frontend AppReact 18, Vite, TypeScript, Tailwind CSS   Core API BackendFastAPI, Python 3.12, SQLAlchemy 2.0 Async   DatabasePostgreSQL 16 with RLS policies   Background TasksCelery & Redis   Ingress & SSLCaddy Server 2   
+## 🛠 Tech Stack
 
+| Layer | Technology |
+| :--- | :--- |
+| **Monorepo Management** | pnpm Workspaces |
+| **Frontend App** | React 18, Vite, TypeScript, Tailwind CSS |
+| **Core API Backend** | FastAPI, Python 3.12, SQLAlchemy 2.0 Async |
+| **Database** | PostgreSQL 16 with RLS policies |
+| **Background Tasks** | Celery & Redis |
+| **AI / ML Service** | FastAPI microservice (recommendations, demand forecasting, embeddings, vision) |
+| **ERP Integration** | TallyPrime via Windows `tally-bridge` agent |
+| **Ingress & SSL** | Caddy Server 2 |
 
-⚡ Quick Start & Local Setup
-Prerequisites
-Node.js >= 20.x
+---
 
-Python >= 3.12
+## ⚡ Quick Start & Local Setup
 
-pnpm >= 8.x
+### Prerequisites
 
-Docker Desktop
+- **Node.js** >= 20.x
+- **Python** >= 3.12
+- **pnpm** >= 8.x
+- **Docker Desktop**
 
-1. Setup Monorepo Workspace
+### Getting Started
 
+#### 1. Setup Monorepo Workspace
+```bash
 # Install root & workspace dependencies
 pnpm install
+```
 
-2. Configure Environment
-Bash
+#### 2. Configure Environment
+```bash
 cp .env.example .env
+```
 
-3. Launch Local Services
-Bash
+#### 3. Launch Local Services
+```bash
 docker-compose up -d
+```
 
-4. Run Monorepo Apps
-Bash
+#### 4. Run Database Migrations
+```bash
+# Apply schema migrations and RLS policies
+cd apps/api && alembic upgrade head
+```
+
+#### 5. Run Monorepo Apps
+```bash
 pnpm dev
+```
 
-🌐 Local Multi-Tenant Testing (/etc/hosts)
-Map test domains in your /etc/hosts file:
+---
 
-Code snippet
+## 🌐 Local Multi-Tenant Testing (`/etc/hosts`)
+
+### 1. Map Test Domains
+
+Add these entries to your hosts file:
+
+```bash
+# Linux / macOS: sudo nano /etc/hosts
+# Windows: C:\Windows\System32\drivers\etc\hosts (edit as Administrator)
+
 127.0.0.1   platform.local
 127.0.0.1   sethifashion.local
 127.0.0.1   sharmasarees.local
+```
 
-Access local storefronts:
+### 2. Access Local Storefronts
 
-Sethi Fashion: http://sethifashion.local:3000
+- Sethi Fashion: http://sethifashion.local:3000
+- Sharma Sarees: http://sharmasarees.local:3000
 
-Sharma Sarees: http://sharmasarees.local:3000
+---
 
-📜 License
+## 🧪 Running Tests
+
+```bash
+# Frontend & shared packages
+pnpm test
+
+# Backend API tests
+cd apps/api && pytest
+```
+
+Tenant isolation, contract, E2E, and load tests live in the top-level `tests/` directory.
+
+---
+
+## 📜 License
+
 Internal Proprietary Commercial Software — All Rights Reserved.
