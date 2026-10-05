@@ -1,0 +1,6 @@
+api_base_url: "https://api.example.com/api/v1"
+api_key: "TALLY_AGENT_API_KEY"
+tally_host: "localhost"
+tally_port: 9000          # confirm for the installed Tally version
+company_name: "DEMO COMPANY"
+poll_seconds: 15

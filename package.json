@@ -1,0 +1,11 @@
+{
+  "name": "fashionos",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev:web": "pnpm --filter @fashionos/web dev",
+    "build:web": "pnpm --filter @fashionos/web build",
+    "dev:api": "cd apps/api && uvicorn app.main:app --reload --port 8000",
+    "test:api": "cd apps/api && pytest"
+  }
+}
