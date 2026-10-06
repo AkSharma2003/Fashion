@@ -1,0 +1,16 @@
+1. apps/api/app/modules/tally/router.py
+
+2. apps/tally-bridge/src/tally_client.py
+
+3. apps/tally-bridge/src/voucher_builder.py
+
+4. apps/tally-bridge/src/agent.py
+
+
+5. apps/tally-bridge/config/config.example.yaml
+
+6. apps/tally-bridge/requirements.txt
+
+7. apps/api/app/core/config.py
+
+8. apps/worker/app/tasks/tally_sync.py

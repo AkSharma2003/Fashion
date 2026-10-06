@@ -1,6 +1,25 @@
-api_base_url: "https://api.example.com/api/v1"
-api_key: "TALLY_AGENT_API_KEY"
-tally_host: "localhost"
-tally_port: 9000          # confirm for the installed Tally version
-company_name: "DEMO COMPANY"
+# Copy this file to tally-bridge.local.yaml
+# on the Windows PC running Tally Prime.
+#
+# Never commit the local file or real API key.
+
+api_base_url: "http://localhost:8000/api/v1"
+
+api_key: "CHANGE_ME_TALLY_AGENT_API_KEY"
+
+
+tally_host: "192.168.228.92"
+
+tally_port: 9000
+
+tally_timeout_seconds: 10
+
+
+company_name: "WearVerse"
+
+sales_ledger: "Sales"
+
+
 poll_seconds: 15
+
+api_timeout_seconds: 20
