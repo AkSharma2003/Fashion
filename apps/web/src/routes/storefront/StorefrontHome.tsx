@@ -1,8 +1,15 @@
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+
 export default function StorefrontHome() {
   return (
-    <main className="p-6">
-      <h1 className="text-2xl font-semibold">FashionOS</h1>
-      <p className="mt-2 text-gray-600">Website (customers). Catalog, cart and checkout come here.</p>
-    </main>
+    <>
+      <Header />
+      <main className="p-6 bg-[] min-h-screen h-14 bg-linear-to-br from-background to-Alt_background">
+       
+      </main>
+
+      <Footer/>
+    </>
   );
 }
