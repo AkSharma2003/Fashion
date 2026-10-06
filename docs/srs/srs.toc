@@ -1,0 +1,94 @@
+\contentsline {section}{What Changed in v1.0}{4}{Doc-Start}%
+\contentsline {section}{\numberline {1}How to Use This Document}{4}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Open Decisions That Change the Build}{4}{subsection.1.1}%
+\contentsline {section}{\numberline {2}Product Overview}{5}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Vision}{5}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Goals}{5}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Users}{5}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Feature Map by Phase}{6}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}Success Metrics \textit {[Assumption]}{} (targets to confirm)}{6}{subsection.2.5}%
+\contentsline {section}{\numberline {3}Scope and Roadmap}{6}{section.3}%
+\contentsline {subsection}{\numberline {3.1}In Scope (Phase 1)}{6}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Out of Scope (for now)}{7}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Roadmap \textit {[Assumption]}{} (to be re-estimated)}{7}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Milestones}{7}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Rollout Order}{7}{subsection.3.5}%
+\contentsline {section}{\numberline {4}System Architecture}{8}{section.4}%
+\contentsline {subsection}{\numberline {4.1}High-Level Diagram}{8}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Components}{8}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Key Design Decisions}{8}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Flow in Mode B (FashionOS POS): Khata Sale to WhatsApp and Tally}{9}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Flow in Mode A (counter bills in TallyPrime; first step of rollout)}{9}{subsection.4.5}%
+\contentsline {subsection}{\numberline {4.6}Environments}{10}{subsection.4.6}%
+\contentsline {section}{\numberline {5}Module Technical Notes}{10}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Shared Stock and Reservations (FR-CAT-02..04)}{10}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Offline POS (FR-POS-08)}{10}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Khata Ledger (FR-KHT)}{10}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}WhatsApp Pipeline (FR-WAP)}{11}{subsection.5.4}%
+\contentsline {subsection}{\numberline {5.5}Online Payments and Pay Now Links (FR-PAY, FR-PRT)}{11}{subsection.5.5}%
+\contentsline {subsection}{\numberline {5.6}Tally Integration (FR-TLY)}{11}{subsection.5.6}%
+\contentsline {subsection}{\numberline {5.7}Employees and Payroll (FR-EMP)}{12}{subsection.5.7}%
+\contentsline {subsection}{\numberline {5.8}Fall-Pico (FR-FPC)}{12}{subsection.5.8}%
+\contentsline {section}{\numberline {6}AI Integration}{13}{section.6}%
+\contentsline {subsection}{\numberline {6.1}AI Use Cases}{13}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}AI Service Rules}{13}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Input and Output Examples}{13}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Models and Cost \textit {[Assumption]}}{14}{subsection.6.4}%
+\contentsline {subsection}{\numberline {6.5}Prompt Management}{14}{subsection.6.5}%
+\contentsline {subsection}{\numberline {6.6}Fallbacks}{15}{subsection.6.6}%
+\contentsline {subsection}{\numberline {6.7}Data Privacy for AI}{15}{subsection.6.7}%
+\contentsline {subsection}{\numberline {6.8}AI Quality Testing}{15}{subsection.6.8}%
+\contentsline {section}{\numberline {7}Database Schema}{15}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Main Tables}{15}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Relationships (simple view)}{16}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Database Rules}{16}{subsection.7.3}%
+\contentsline {section}{\numberline {8}API Documentation}{17}{section.8}%
+\contentsline {subsection}{\numberline {8.1}Standard Response Format}{17}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}Common Error Codes}{17}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}Endpoints}{17}{subsection.8.3}%
+\contentsline {subsection}{\numberline {8.4}Sample: Push a Khata Bill from POS}{18}{subsection.8.4}%
+\contentsline {section}{\numberline {9}UI/UX Guidelines}{19}{section.9}%
+\contentsline {subsection}{\numberline {9.1}Interfaces}{19}{subsection.9.1}%
+\contentsline {subsection}{\numberline {9.2}Sitemap}{19}{subsection.9.2}%
+\contentsline {subsection}{\numberline {9.3}Design System \textit {[Assumption]}{} (designer to finalise)}{20}{subsection.9.3}%
+\contentsline {subsection}{\numberline {9.4}Key User Flows}{20}{subsection.9.4}%
+\contentsline {subsection}{\numberline {9.5}Design Deliverables}{20}{subsection.9.5}%
+\contentsline {section}{\numberline {10}Team Roles and Sprint Plan}{21}{section.10}%
+\contentsline {subsection}{\numberline {10.1}Roles \textit {[Assumption]}{} (5 members)}{21}{subsection.10.1}%
+\contentsline {subsection}{\numberline {10.2}Sprint Plan (2-week sprints) \textit {[Assumption]}{} (to be re-estimated after SRS sign-off)}{21}{subsection.10.2}%
+\contentsline {subsection}{\numberline {10.3}Task Board Rules}{22}{subsection.10.3}%
+\contentsline {section}{\numberline {11}Developer Guide}{22}{section.11}%
+\contentsline {subsection}{\numberline {11.1}Repository Structure}{22}{subsection.11.1}%
+\contentsline {subsection}{\numberline {11.2}Coding Standards}{23}{subsection.11.2}%
+\contentsline {subsection}{\numberline {11.3}Git Workflow}{23}{subsection.11.3}%
+\contentsline {subsection}{\numberline {11.4}Environment Setup (new developer, target 30 minutes)}{23}{subsection.11.4}%
+\contentsline {subsection}{\numberline {11.5}Environment Variables}{24}{subsection.11.5}%
+\contentsline {section}{\numberline {12}Security and Performance Checklist}{24}{section.12}%
+\contentsline {subsection}{\numberline {12.1}Security}{24}{subsection.12.1}%
+\contentsline {subsection}{\numberline {12.2}Performance}{25}{subsection.12.2}%
+\contentsline {subsection}{\numberline {12.3}SEO Checklist (website)}{25}{subsection.12.3}%
+\contentsline {section}{\numberline {13}Test Plan}{26}{section.13}%
+\contentsline {subsection}{\numberline {13.1}Test Types and Tools}{26}{subsection.13.1}%
+\contentsline {subsection}{\numberline {13.2}Core Test Cases (examples; full list tracked in the test tool)}{26}{subsection.13.2}%
+\contentsline {subsection}{\numberline {13.3}Bug Severity}{27}{subsection.13.3}%
+\contentsline {subsection}{\numberline {13.4}Release Gate (must be true to go live)}{27}{subsection.13.4}%
+\contentsline {section}{\numberline {14}Deployment and Go-Live Guide}{28}{section.14}%
+\contentsline {subsection}{\numberline {14.1}Release Steps (Production)}{28}{subsection.14.1}%
+\contentsline {subsection}{\numberline {14.2}Installing the Tally Sync Agent (Cloud Tally Server)}{28}{subsection.14.2}%
+\contentsline {subsection}{\numberline {14.3}Data Migration and Parallel Run}{28}{subsection.14.3}%
+\contentsline {subsection}{\numberline {14.4}Rollback and Contingency}{29}{subsection.14.4}%
+\contentsline {subsection}{\numberline {14.5}Monitoring and Alerts}{29}{subsection.14.5}%
+\contentsline {subsection}{\numberline {14.6}Go-Live Checklist}{29}{subsection.14.6}%
+\contentsline {section}{\numberline {15}Staff Handover and Training Manual}{30}{section.15}%
+\contentsline {subsection}{\numberline {15.1}What You Receive}{30}{subsection.15.1}%
+\contentsline {subsection}{\numberline {15.2}Daily Tasks}{30}{subsection.15.2}%
+\contentsline {subsection}{\numberline {15.3}Things to Remember}{31}{subsection.15.3}%
+\contentsline {subsection}{\numberline {15.4}Frequently Asked Questions}{31}{subsection.15.4}%
+\contentsline {subsection}{\numberline {15.5}Support and Maintenance}{32}{subsection.15.5}%
+\contentsline {subsection}{\numberline {15.6}Training Plan}{32}{subsection.15.6}%
+\contentsline {section}{\numberline {16}Risks, Assumptions and Change Log}{32}{section.16}%
+\contentsline {subsection}{\numberline {16.1}Risks}{32}{subsection.16.1}%
+\contentsline {subsection}{\numberline {16.2}Key Assumptions}{33}{subsection.16.2}%
+\contentsline {subsection}{\numberline {16.3}Change Request Process}{33}{subsection.16.3}%
+\contentsline {subsection}{\numberline {16.4}Change Request Log}{34}{subsection.16.4}%
+\contentsline {subsection}{\numberline {16.5}Document Version History}{34}{subsection.16.5}%

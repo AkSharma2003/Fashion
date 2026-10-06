@@ -1,0 +1,1251 @@
+% ============================================================
+% FashionOS: Complete Project Documentation (v1.0)
+% Compile with: pdflatex FashionOS_Documentation.tex  (run twice for TOC)
+% ============================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=1.5cm,headheight=14pt]{geometry}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{amssymb}
+\usepackage{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{brand}{HTML}{111111}
+\definecolor{accent}{HTML}{1F4E79}
+\definecolor{hdrgray}{HTML}{E8EAED}
+\definecolor{codebg}{HTML}{F5F5F5}
+
+\setlength{\parindent}{0pt}
+\setlength{\tabcolsep}{3pt}
+\setlength{\emergencystretch}{3em}
+\setlength{\parskip}{5pt}
+\renewcommand{\arraystretch}{1.25}
+\setlist{itemsep=2pt,topsep=3pt}
+
+% Section styling
+\titleformat{\section}{\Large\bfseries\color{accent}}{\thesection.}{0.6em}{}[\titlerule]
+\titleformat{\subsection}{\large\bfseries\color{brand}}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{brand}}{\thesubsubsection}{0.6em}{}
+
+% Header / footer
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small FashionOS: Complete Project Documentation}
+\fancyhead[R]{\small v1.0 (Draft)}
+\fancyfoot[C]{\small Page \thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Code styling
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{gray!50},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  xleftmargin=2pt,xrightmargin=2pt
+}
+
+% Helpers
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\assump}{\textit{[Assumption]}}
+\newcommand{\tbd}{\textit{[TBD]}}
+\newcommand{\todo}[1]{\textit{[#1]}}
+\newcommand{\req}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\chk}{$\square$}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\hdr}{\rowcolor{hdrgray}\bfseries}
+\newenvironment{note}{\begin{tcolorbox}[colback=yellow!8,colframe=orange!60!black,boxrule=0.5pt,left=4pt,right=4pt,top=3pt,bottom=3pt]}{\end{tcolorbox}}
+
+\begin{document}
+
+%% ---------------- Title page ----------------
+\begin{titlepage}
+\centering
+\vspace*{3cm}
+{\fontsize{30}{36}\selectfont\bfseries FashionOS\par}
+\vspace{0.4cm}
+{\LARGE Complete Project Documentation\par}
+\vspace{1.5cm}
+\begin{tabular}{rl}
+\textbf{Version:} & 1.0 (Draft) \\
+\textbf{Owner:} & Project Manager \\
+\textbf{Last Updated:} & 5 October 2026 \\
+\textbf{Status:} & For team review \\
+\end{tabular}
+\vspace{2cm}
+
+\begin{tcolorbox}[colback=hdrgray,colframe=accent,boxrule=0.6pt,width=0.9\textwidth,left=8pt,right=8pt]
+\raggedright
+Updated to match FashionOS SRS v1.0 (final). FashionOS is the client's own business: one shop and one website that share one stock, with khata (credit), WhatsApp bills, Tally integration, employee management and saree fall-pico. The earlier marketplace / SaaS plan is removed. The SRS says \emph{what} to build (requirement IDs like \req{FR-KHT-02}); this document says \emph{how} to build and run it. Anything not confirmed is marked \assump{} or \tbd{}.
+\end{tcolorbox}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+%% ---------------- What changed ----------------
+\section*{What Changed in v1.0}
+\addcontentsline{toc}{section}{What Changed in v1.0}
+\begin{enumerate}
+\item The technology stack is decided: FastAPI, React + Vite + TypeScript, PostgreSQL, Celery + Redis (earlier text about NestJS, Next.js and BullMQ is removed).
+\item Tally data moves to a cloud server in India that runs 24 hours, with the sync agent on that same server.
+\item The shop bills in TallyPrime today with one counter, so FashionOS starts in \textbf{Mode A} (it imports from Tally) and the counter moves to the FashionOS POS later (\textbf{Mode B}) after a clean parallel run. The roadmap, milestones, sprint plan, rollout order, Tally design, setup, rollback and risks are updated for this.
+\item The bill number format will change; a new series starts at cutover.
+\item GSTIN is confirmed.
+\end{enumerate}
+
+%% ---------------- 0 ----------------
+\section{How to Use This Document}
+\begin{longtable}{L{8cm}L{8.5cm}}
+\hdr Section & Main reader \\ \endhead
+1. Product Overview, 2. Scope and Roadmap & Client + Team \\
+3. Architecture, 4. Module Technical Notes & Developers \\
+5. AI Integration, 6. Database, 7. API & Backend, Integration, AI engineers \\
+8. UI/UX, 9. Team and Sprints & Designer, PM, all \\
+10. Developer Guide, 11. Security & Developers \\
+12. Test Plan, 13. Deployment and Go-Live & QA, DevOps, Accountant \\
+14. Staff Handover and Training Manual & Client and shop staff \\
+15. Risks and Change Log & PM, Client \\
+\end{longtable}
+
+\begin{note}
+\textbf{Rule: one source of truth.} Requirements live in the SRS. If something changes, change the SRS first, then this document, then the code.
+\end{note}
+
+\subsection{Open Decisions That Change the Build}
+\begin{longtable}{L{0.6cm}L{4cm}L{6.4cm}L{5.2cm}}
+\hdr \# & Decision & Current assumption & Build impact \\ \endhead
+1 & Where is the shop bill made: FashionOS POS or Tally? & Start in Mode A: the counter keeps billing in TallyPrime and FashionOS imports it. Move to the FashionOS POS (Mode B) after a clean parallel run. \textbf{Confirmed:} billing is in TallyPrime today & Decides the direction and volume of Tally sync \\
+2 & Tally product, version, number of computers & Latest TallyPrime on a cloud Windows server in India, on 24 hours (hosting and licence to confirm) & Sync agent design \\
+3 & Fall-pico rules (limit before/after discount, online skip, worker type) & Per saree, after discount, customer may skip online, per-piece weekly pay & Order flow and wage calculation \\
+4 & Employee attendance method & Manager entry + PIN & Attendance screens \\
+5 & WhatsApp provider and message budget & Official API provider, English/Hindi/Hinglish & Template approval takes days: start in Week 1 \\
+6 & Shop hardware: counters, scanners, printers & One counter today (confirmed); scanner and printer models TBD & POS print and offline design \\
+7 & Tech stack & Decided: FastAPI, React + Vite + TypeScript, PostgreSQL, Celery + Redis & Team hiring and setup \\
+8 & Hosting & AWS Mumbai & Cost and data location \\
+\end{longtable}
+The full list is in SRS section 11.
+
+%% ---------------- 1 ----------------
+\section{Product Overview}
+\subsection{Vision}
+FashionOS runs the client's whole fashion business from one system: billing at the shop, selling on the website, tracking one shared stock, handling customer credit (khata) with WhatsApp bills, paying staff and fall-pico workers, and keeping Tally books correct, with AI helping customers shop and the owner decide what to buy.
+
+\subsection{Goals}
+\begin{enumerate}
+\item One stock for shop and website, so nothing is oversold and nobody counts twice.
+\item Fast shop billing that keeps working when the internet is down.
+\item Khata customers get an instant WhatsApp bill and can pay from home; the owner always knows who owes what.
+\item Tally always matches FashionOS, without double entry by the accountant.
+\item Staff salary, advances and fall-pico worker payments are clear and disputes are rare.
+\item AI increases sales (recommendations, search, chat, posters) and improves buying decisions (trends, demand, missing products).
+\end{enumerate}
+
+\subsection{Users}
+\begin{longtable}{L{5cm}L{11.5cm}}
+\hdr User & Main needs \\ \endhead
+Owner & Full view of sales, cash, khata, stock, salary; approvals; buying decisions \\
+Manager & Daily operations, discounts, attendance, fall-pico assignment \\
+Cashier / sales staff & Quick billing, khata sales, returns \\
+Accountant & Tally sync, reconciliation, GST, salary sheets \\
+Online order staff & Pick, pack, ship website orders \\
+Fall-pico supervisor and workers & Job list, quality check, earnings \\
+Employee & Own attendance, salary, advance, balance \\
+Khata customer & Own bills, balance, pay from home \\
+Online customer & Browse, buy, track, return \\
+\end{longtable}
+
+\subsection{Feature Map by Phase}
+\begin{longtable}{L{4cm}L{3.2cm}L{1.4cm}L{7.9cm}}
+\hdr Module & SRS requirements & Phase & What it delivers \\ \endhead
+Catalog, shared stock, barcodes & \req{FR-CAT} & 1 & One catalog and stock, labels, stock count \\
+Shop billing (POS) & \req{FR-POS} & 1 & Billing, returns, cash register, offline mode \\
+Khata, WhatsApp bills, pay from home & \req{FR-KHT}, \req{FR-WAP}, \req{FR-PRT} & 1 & Ledger, AI-worded bills, reminders, Pay Now \\
+Tally integration & \req{FR-TLY} & 1 & Two-way sync, reconciliation, sync issues screen \\
+Employees & \req{FR-EMP} & 1 & Attendance, salary, advance, statement \\
+Fall-pico & \req{FR-FPC} & 1 & Jobs, tags, workers, QC, wages, cost \\
+Purchasing (basic) & \req{FR-PUR-01..03} & 1 & Supplier bills, stock-in, labels \\
+Website and online orders & \req{FR-STO}, \req{FR-CHK}, \req{FR-PAY}, \req{FR-ORD} & 1 (basic) & Browse, cart, pay, ship, return \\
+Access, audit, settings, reports & \req{FR-AUT}, \req{FR-ADM}, \req{FR-RPT}, \req{FR-NOT} & 1 & Roles, audit log, owner dashboard \\
+AI: recommendations, chatbot, smart search, size, descriptions, poster & \req{FR-AI-10..73} & 2 & Customer and staff AI tools \\
+AI: visual search, demand and trend, what to buy & \req{FR-AI-50..52}, \req{80..93} & 3 & Buying intelligence \\
+\end{longtable}
+
+\subsection{Success Metrics \assump{} (targets to confirm)}
+\begin{longtable}{L{10cm}L{6.5cm}}
+\hdr Metric & Target \\ \endhead
+3-item cash bill at the counter & Under 30 seconds \\
+Stock accuracy (system vs physical count) & 98\% or better \\
+Tally vouchers synced within 5 minutes & 99\%, with zero duplicates and zero lost \\
+WhatsApp bill delivered within 1 minute of khata sale & 95\% \\
+Share of khata dues paid through Pay Now (after 3 months) & 20\% \\
+Fall-pico jobs finished by promised date & 90\% \\
+Website mobile load (4G) & Under 2.5 seconds \\
+Online payment success rate & 95\% \\
+\end{longtable}
+
+%% ---------------- 2 ----------------
+\section{Scope and Roadmap}
+\subsection{In Scope (Phase 1)}
+\begin{itemize}
+\item Shared catalog and stock, shop billing with offline mode, khata with WhatsApp bills and Pay Now.
+\item Tally integration in both directions, employees, fall-pico, basic purchasing.
+\item Basic website: browse, search, cart, checkout, payments, shipping, returns.
+\item Roles, audit log, owner dashboard and reports.
+\end{itemize}
+
+\subsection{Out of Scope (for now)}
+Native apps, international sales, wholesale portal, AR try-on, Amazon/Flipkart sync, multiple shops, and a SaaS platform for other brands.
+
+\subsection{Roadmap \assump{} (to be re-estimated)}
+\begin{longtable}{L{3.6cm}L{3.2cm}L{9.7cm}}
+\hdr Phase & Duration & Deliverables \\ \endhead
+Phase 0: Setup & Weeks 1 to 2 & SRS approved, repos, CI, environments, Tally cloud server and version check, Tally data sample check, WhatsApp template request \\
+Phase 1: Core & Weeks 3 to 18 & Mode A first (Tally import and sync, khata, WhatsApp, Pay Now), then POS billing, employees, purchasing, fall-pico, website \\
+POS parallel run and cutover & Weeks 13 to 20 & Counter bills in FashionOS POS and in TallyPrime side by side, then cutover to POS (Mode B) after a clean run \\
+Phase 2 & 8 to 10 weeks after go-live & AI recommendations, chatbot, smart search, size AI, description writer, poster maker, purchase orders \\
+Phase 3 & Later & Visual search, demand and trend forecast, what-to-buy, Hindi UI, more \\
+\end{longtable}
+
+\subsection{Milestones}
+\begin{enumerate}
+\item \textbf{M1 (Week 2):} SRS signed, designs and architecture approved, Tally cloud server access and version confirmed, Tally data sample checked.
+\item \textbf{M2 (Week 6):} Mode A working on staging: Tally import (items, parties, vouchers), shared stock, Tally sync, Sync Issues screen.
+\item \textbf{M3 (Week 10):} Khata, WhatsApp bills, Pay Now and Tally receipts live in the shop, while the counter still bills in TallyPrime.
+\item \textbf{M4 (Week 16):} POS billing (offline), employees, purchasing and fall-pico working; POS parallel run in progress.
+\item \textbf{M5 (Week 18):} Website checkout, orders and shipping working; UAT done.
+\item \textbf{M6 (Week 20):} Parallel run clean, new bill series approved, POS cutover and go-live of everything.
+\end{enumerate}
+
+\subsection{Rollout Order}
+The shop already trades and bills in TallyPrime, so FashionOS goes live in steps and the counter's billing is never stopped:
+\begin{enumerate}
+\item data import, shared stock and Tally sync while the counter keeps billing in TallyPrime (Mode A);
+\item khata, WhatsApp bills and Pay Now;
+\item POS billing, run side by side with Tally, then cutover (Mode B) after a clean parallel run;
+\item employees, fall-pico and purchasing;
+\item the website.
+\end{enumerate}
+Each step runs in the shop for about a week before the next one starts.
+
+%% ---------------- 3 ----------------
+\section{System Architecture}
+\subsection{High-Level Diagram}
+\begin{lstlisting}
+Customers (phone / browser)      Shop counter (one)
+        |                          |            |
+        | HTTPS                    | today: bills | after cutover:
+        v                          | in TallyPrime | FashionOS POS
++---------------------------+      v              | (works offline)
+| FashionOS Cloud           |  +------------------+  |
+| React web (Vite)          |  | Tally CLOUD      |  |
+| FastAPI modular monolith  |<-| SERVER (India,   |  |
+| Stock, Khata, POS         |  | 24 hours):       |  |
+| Orders, Payments          |  | TallyPrime +     |  |
+| Employees, Fall-pico      |  | sync agent       |  |
+| Purchasing, Reports       |  | (agent calls out |  |
+| Outbox                    |  | over HTTPS)      |  |
+| PostgreSQL, Redis+Celery  |  +------------------+  |
+| AI service (FastAPI)      |<-----------------------+
++---------------------------+
+   ^        ^         ^          ^
+WhatsApp  Razorpay  Courier  SMS / Email
+\end{lstlisting}
+
+\subsection{Components}
+\begin{longtable}{L{3cm}L{5cm}L{8.5cm}}
+\hdr Component & Role & Technology \assump \\ \endhead
+Website and back office & Customer site, owner, manager, accountant, screens & React + Vite + TypeScript, Tailwind CSS (the public website needs prerendering or server rendering for SEO, TBD) \\
+POS app & Shop billing, works offline & Installable web app (PWA) with local database (IndexedDB) and sync queue \\
+API & All business rules & Python, FastAPI, SQLAlchemy 2.0, Alembic \\
+Database & All records & PostgreSQL \\
+Cache and queues & Sessions, jobs, retries & Redis, Celery \\
+Tally sync agent & Talks to Tally on the cloud Tally server & Small Python service on the same server as Tally, using Tally's local XML/HTTP interface \\
+WhatsApp gateway & Send and receive messages & Official WhatsApp Business API through a provider \\
+AI service & WhatsApp wording, recommendations, chat, search, forecasts, posters & Python, FastAPI, hosted LLM and image model, pgvector \\
+Files & Product and AI images & AWS S3 + CloudFront \\
+Search & Product search & PostgreSQL full-text first; Meilisearch later \\
+Monitoring & Errors, logs, alerts & Sentry, CloudWatch \\
+CI/CD & Test and deploy & GitHub Actions, Docker \\
+\end{longtable}
+
+\subsection{Key Design Decisions}
+\begin{enumerate}
+\item \textbf{Modular monolith} for the backend. Simple for 5 people; modules can be split later.
+\item \textbf{One stock ledger.} Every change to stock is a row in \code{stock_movements}; \code{stock_levels} is the current total. Shop, website, purchases, returns and Tally imports all write to it.
+\item \textbf{Append-only money ledgers.} Khata, employee and worker balances are sums of entries. Entries are never edited or deleted; mistakes are fixed by reversing entries.
+\item \textbf{Outbox pattern.} Anything that must reach Tally or WhatsApp is first saved in an outbox table in the same database transaction as the sale, then sent by a worker with retries. No sale is lost if Tally or WhatsApp is down.
+\item \textbf{Offline-first POS.} The POS keeps its own copy of products, prices and customers, saves bills locally, and syncs when online. Each bill has a unique idempotency key, so a retry never creates a second bill.
+\item \textbf{Tally agent is outbound only.} The agent runs on the same server as Tally and opens the connection to FashionOS. Tally's interface is never open to the internet.
+\item \textbf{Tally is the master of books, FashionOS is the master of daily bills, stock and khata} (SRS 2.1). Conflicts go to a Sync Issues screen, never silently overwritten.
+\item \textbf{AI is a separate service} with timeouts and fallbacks, so it can fail without stopping billing.
+\item \textbf{Payments are confirmed only by gateway webhook}, never by the browser.
+\item \textbf{Money is stored in paise} as whole numbers; GST is calculated on the server.
+\item \textbf{Everything important is audited} (who, what, old, new, when, device).
+\end{enumerate}
+
+\subsection{Flow in Mode B (FashionOS POS): Khata Sale to WhatsApp and Tally}
+\begin{enumerate}
+\item Cashier scans items, picks the khata customer, chooses khata payment.
+\item POS checks credit limit (using the last synced balance) and warns if crossed.
+\item POS saves the bill locally and sends it to the API with its idempotency key.
+\item API in one transaction: saves bill, deducts stock, adds a khata ledger entry, creates fall-pico jobs for eligible sarees, writes outbox rows for Tally and WhatsApp.
+\item Message worker asks the AI service for wording, checks every number against the ledger, picks an approved template and sends on WhatsApp (SMS if it fails).
+\item Tally worker hands the sales voucher to the sync agent; the agent posts it to Tally and reports back; the outbox row is marked done.
+\item Later the customer pays through the Pay Now link: Razorpay webhook, ledger entry, WhatsApp receipt, Tally receipt voucher.
+\end{enumerate}
+
+\subsection{Flow in Mode A (counter bills in TallyPrime; first step of rollout)}
+\begin{enumerate}
+\item The cashier makes a khata bill in TallyPrime as today, with the customer's ledger as the party.
+\item The sync agent on the Tally server reads the new voucher and sends it to the cloud (\code{/tally/inbox}).
+\item The cloud matches the Tally party to a FashionOS customer (through \code{tally_ledger_map}), saves the sale (source \code{tally_import}), deducts stock and adds the khata ledger entry.
+\item A WhatsApp job is created. Wording, validation and sending follow section 4.4. Delay: up to 5 minutes.
+\item Saree lines above the fall-pico limit create fall-pico jobs.
+\item Website stock is updated as soon as step 3 is done.
+\item When the customer pays through the Pay Now link, FashionOS records the payment, sends the WhatsApp receipt, and the agent posts a Receipt voucher to Tally.
+\item If the party or an item cannot be matched, the bill goes to the Sync Issues screen and no message is sent.
+\end{enumerate}
+
+\subsection{Environments}
+\begin{longtable}{L{2.4cm}L{7cm}L{7.1cm}}
+\hdr Environment & Purpose & Deploy \\ \endhead
+Local & Developer machine, Docker Compose, Tally demo company & Manual \\
+Dev & Integrated testing & Auto on merge to \code{develop} \\
+Staging & Client demo, UAT, test Tally company and WhatsApp sandbox & Auto on merge to \code{release} \\
+Production & Live shop and website & Manual approval from \code{main} \\
+\end{longtable}
+
+%% ---------------- 4 ----------------
+\section{Module Technical Notes}
+\subsection{Shared Stock and Reservations (FR-CAT-02..04)}
+\code{stock_levels} holds \code{on_hand} and \code{reserved} per variant. A variant is sellable when \code{on_hand - reserved >= quantity}.
+\begin{itemize}
+\item Shop bill: deduct \code{on_hand}. Online order: add to \code{reserved} until paid, then deduct; release on cancel or after 30 minutes unpaid.
+\item Updates use one atomic statement or a row lock inside a transaction, so the last unit can only be sold once.
+\item \textbf{Offline POS case:} a counter without internet may sell a unit that was sold online in the meantime. The sync accepts the bill (it already happened), stock goes negative, and the owner gets a Stock Conflict alert. \assump{} Accept and alert, never reject a finished shop sale.
+\item Stock count mode writes adjustment movements with a reason; nothing overwrites \code{on_hand} directly.
+\end{itemize}
+
+\subsection{Offline POS (FR-POS-08)}
+\begin{itemize}
+\item POS is an installable web app (PWA). A service worker caches the app; IndexedDB stores products, prices, barcodes, khata customers (with last synced balance and time), the bill queue and settings.
+\item Each counter has its own bill number series (for example \code{C1-26-000123}). The bill number plus counter ID is the idempotency key sent to the API.
+\item Sync runs every few seconds when online: send queued bills in order, then pull changes since the last sync token. Failed bills stay in the queue and are shown to the cashier.
+\item Credit limit check offline uses the cached balance and shows ``balance may be outdated''. The owner can set a safer limit for offline mode.
+\item Printing: browser print for A4; a small local print helper or ESC/POS over USB/network for thermal printers \todo{TBD by printer model}.
+\item Day-close needs all queued bills synced, or shows what is missing.
+\end{itemize}
+
+\subsection{Khata Ledger (FR-KHT)}
+Table \code{ledger_entries} (append-only): \code{account_id}, \code{type} (SALE, PAYMENT, RETURN, ADJUSTMENT, WRITE\_OFF, REVERSAL), \code{amount_paise} (positive = customer owes more), \code{ref_type}, \code{ref_id}, \code{note}, \code{created_by}, \code{running_balance_paise}.
+\begin{itemize}
+\item Writing an entry locks the account row, reads the last balance, writes the new balance. This keeps the running balance correct when two entries arrive together.
+\item Payments are allocated oldest bill first (\code{ledger_allocations}), so ageing is accurate.
+\item A reversal entry points to the entry it cancels; both stay visible.
+\item Daily integrity job: recompute every balance from entries and compare. Any difference raises an alert (NFR-DATA-01).
+\item Reminder rules (days after bill, due date, weekly) run as a scheduled job and respect quiet hours, opt-out and disputes.
+\end{itemize}
+
+\subsection{WhatsApp Pipeline (FR-WAP)}
+\begin{enumerate}
+\item Event (khata sale, payment, reminder, fall-pico ready) creates a \code{message_jobs} row with the facts needed (amounts, dates, bill number, balance).
+\item The message builder calls the AI service with placeholders (for example \texttt{\{amount\}}, \texttt{\{new\_balance\}}), the customer's language and tone, and asks only for wording.
+\item The validator fills the placeholders from the database and checks that no other number appears in the text. If the check fails, the standard template is used.
+\item The sender picks an approved template (or free text inside the 24-hour window) and calls the provider API.
+\item Provider webhooks update status: sent, delivered, read, failed. A failure triggers SMS and flags the ledger entry.
+\end{enumerate}
+Tables: \code{message_templates} (name, language, approval status), \code{whatsapp_optins}, \code{message_jobs}, \code{message_events}. Template names and wording are submitted to Meta in Phase 0; approval can take days.
+
+\subsection{Online Payments and Pay Now Links (FR-PAY, FR-PRT)}
+\begin{itemize}
+\item Website checkout: create order (\code{PENDING_PAYMENT}), create Razorpay order, customer pays, webhook with verified signature marks it paid. Idempotency by gateway payment ID.
+\item Pay Now: a signed, unguessable token for one customer, valid 7 days, rate limited. It opens a page with balance and recent bills; paying creates a Razorpay payment for the chosen amount.
+\item On webhook: write a PAYMENT ledger entry, allocate to oldest bills, queue WhatsApp receipt and Tally receipt voucher. Duplicate webhooks do nothing.
+\item Overpayment becomes advance credit on the ledger.
+\end{itemize}
+
+\subsection{Tally Integration (FR-TLY)}
+Parts: the outbox in the cloud, the sync agent on the Tally server, and mapping tables. TallyPrime runs on a cloud Windows server in India, on 24 hours (client decision; hosting and licence to confirm). The agent runs on that same server.
+\begin{itemize}
+\item \textbf{Two modes (SRS 3.18).} Mode A: the counter bills in TallyPrime and FashionOS imports the bills. Mode B: the counter bills in the FashionOS POS and FashionOS pushes sales to Tally. A \code{tally_mode} setting with a cutover date decides; only one mode is active, so a sale is never entered twice.
+\item \textbf{Tally to FashionOS} (Mode A, and always for purchases or stock entered in Tally): the agent reads new or changed vouchers and stock using Tally's change counter \todo{verify for the latest TallyPrime} and sends the raw vouchers to \code{tally_inbox}. The cloud turns them into sales, returns, purchases and stock movements marked \code{tally_import}, and skips anything it created itself.
+\item \textbf{FashionOS to Tally:} the agent asks the cloud for pending outbox items over HTTPS, builds the Tally XML, posts it to Tally on the same server, then confirms success or error. Always sent: online orders, Pay Now receipts, shop receipts, supplier payments. In Mode B also shop sales and returns. Each voucher carries a unique FashionOS reference so a retry cannot create a second voucher.
+\item \textbf{Mapping tables:} \code{tally_item_map} (variant to stock item), \code{tally_ledger_map} (customer ledger name to phone; supplier, employee, GST, sales, cash, UPI and bank ledgers), \code{tally_voucher_types}.
+\item \textbf{Voucher types used:} Sales, Credit Note (returns), Receipt, Purchase, Debit Note, Payment, and Journal when needed.
+\item \textbf{Availability:} the server is on 24 hours. A setting holds Tally's working hours (default 24 hours; 11 am to 9 pm only if Tally stays on the shop computer). If Tally cannot be reached, items wait and retry with backoff; the alert goes out after 30 minutes inside working hours. A backlog clears within 15 minutes of Tally opening, and every voucher keeps its original date and time.
+\item \textbf{Errors} (missing ledger, locked period, unknown party or item) go to the Sync Issues screen with the reason. In Mode A a khata bill with an unmatched party sends no WhatsApp message.
+\item \textbf{Reconciliation:} a nightly job (and again after opening) compares day totals (sales, GST, receipts) and item stock between FashionOS and Tally and lists differences.
+\item \textbf{Bill numbers:} in Mode A numbers come from Tally. In Mode B FashionOS uses a new series from \code{bill_series} (prefix, financial year, counter, running number), unique and in order, designed with the accountant under GST rules. The old series stays closed in Tally.
+\item \textbf{Security:} the agent has its own API key and makes outbound HTTPS calls only. Tally's local interface is never open to the internet. The server is in India, open to named users (two-factor where the host offers it), with a daily backup of company data kept apart from the server.
+\item \textbf{Internet dependency:} while the counter bills in cloud Tally (Mode A), billing needs the internet. Keep a backup connection or the paper bill book (FR-TLY-27). This ends at cutover, because the POS works offline.
+\item \textbf{Go-live import:} items, ledgers and opening balances are read from Tally once and checked by the accountant, after a data quality check on a sample.
+\end{itemize}
+\textbf{Verify in Sprint 0:} the exact latest TallyPrime version on the server, whether the agent can run next to it, which requests are supported, and the licence for several users.
+
+\subsection{Employees and Payroll (FR-EMP)}
+\begin{lstlisting}
+Payable days = Present + Half-day x 0.5 + Paid leave + Weekly off (as per shop rule)
+Monthly staff: Earned = Monthly salary x Payable days / Days in month
+Daily staff:   Earned = Daily rate x Payable days
+Gross          = Earned + Incentive + Overtime
+Net payable    = Gross - Advance recovery - Other deductions
+Pending        = Net payable - Salary already paid this month
+\end{lstlisting}
+\textbf{Example:} salary 15,000, 30-day month, 24 payable days, earned 12,000; advance recovery 1,000; net 11,000; already paid 6,000; pending 5,000. Advance of 5,000 falls to 4,000.
+\begin{itemize}
+\item Tables: \code{employees}, \code{attendance}, \code{salary_runs}, \code{salary_lines}, \code{advances}, \code{advance_recoveries}, \code{salary_payments}. All money tables are append-only with reversals.
+\item A salary run is a draft until the owner approves; after approval it is locked.
+\item Salary screens and APIs are allowed only for Owner, Accountant and the employee (own record).
+\end{itemize}
+
+\subsection{Fall-Pico (FR-FPC)}
+\begin{itemize}
+\item \textbf{Job states:} PENDING $\rightarrow$ ASSIGNED $\rightarrow$ IN\_PROGRESS $\rightarrow$ COMPLETED $\rightarrow$ QC\_PASSED $\rightarrow$ READY $\rightarrow$ HANDED\_OVER. Side paths: REWORK (from QC fail), CANCELLED.
+\item On bill or paid order, for each saree line with \code{fall_pico_eligible = true} and price above the limit (setting, default 1,000), create one job and print the tag. The customer can decline at the counter; online customers can skip at checkout.
+\item Assignment: manual or lowest open jobs. Capacity per worker is a soft limit.
+\item \code{fp_job_events} records every handover and return (who, when, state), so a saree can always be found.
+\item \textbf{Wages:} a job becomes payable when it reaches QC\_PASSED. Wage = worker rate at that time $\times$ number of pieces. Rework is not paid again. Worker statement: jobs done, earned, paid, advance, balance (same ledger design as employees).
+\item \textbf{Online orders:} after payment the order enters FALL\_PICO\_IN\_PROGRESS; it can be packed only when the job is QC\_PASSED or skipped.
+\item \textbf{Cost:} monthly cost = wages + material; report cost per saree.
+\end{itemize}
+
+%% ---------------- 5 ----------------
+\section{AI Integration}
+\subsection{AI Use Cases}
+\begin{longtable}{L{1.3cm}L{3.2cm}L{6.4cm}L{1.2cm}L{4.4cm}}
+\hdr ID & Feature & What it does & Phase & Model type \\ \endhead
+AI-0 & WhatsApp bill and reminder wording & Writes polite message text around exact numbers & 1 & LLM (small, fast) \\
+AI-1 & Recommendations & Similar, also bought, complete the look, picked for you & 2 & Embeddings + behaviour data \\
+AI-2 & Support chatbot & Answers product, delivery, return, fall-pico and order questions & 2 & LLM with retrieval (RAG) \\
+AI-3 & Smart search & Natural language to filters plus meaning search & 2 & LLM parser + vector search \\
+AI-4 & Size recommendation & Suggests size from size chart, body details, past returns & 2 & Rules + ML \\
+AI-5 & Description writer & Title, description, tags from photos and details & 2 & Multimodal LLM \\
+AI-6 & Banner and poster maker & Designs from brief with exact editable text & 2 & Image model + template engine \\
+AI-7 & Visual search & Find similar products from a photo & 3 & Image embeddings \\
+AI-8 & Demand and trend forecast & 7, 30, 90 day demand, trending items, reorder advice & 3 & Time-series + trend data \\
+AI-9 & What to buy & Missing products with evidence, quantity and budget & 3 & Analytics + LLM summary \\
+\end{longtable}
+
+\subsection{AI Service Rules}
+\begin{itemize}
+\item A separate service. The API calls it with a 3 second timeout (30 seconds for images) and always has a fallback.
+\item For anything about money, stock or order status, the answer comes from the database, not from the model.
+\item Personal data (full phone, address, salary, payment details) is never sent to an external model. Names are sent as first name or placeholder only.
+\item Each feature has an on/off switch, a monthly cost limit and usage logging.
+\end{itemize}
+
+\subsection{Input and Output Examples}
+\textbf{AI-0 WhatsApp bill wording} (the model sees placeholders, not real amounts)
+\begin{lstlisting}
+POST /ai/message/compose
+{
+  "purpose": "khata_bill",
+  "language": "hinglish",
+  "tone": "polite",
+  "first_name": "Ramesh",
+  "placeholders": ["{bill_no}", "{amount}", "{prev_balance}", "{new_balance}", "{pay_link}"]
+}
+
+{
+  "text": "Namaste Ramesh ji, aapka bill {bill_no} ({amount}) ban gaya hai. Pehle ka baaki {prev_balance}, ab kul baaki {new_balance}. Ghar se payment ke liye: {pay_link}. Dhanyavaad!",
+  "source": "ai"
+}
+\end{lstlisting}
+The validator fills the placeholders from the ledger and rejects the text if any other number appears or a placeholder is missing. Then the standard template is used.
+
+\textbf{AI-1 Recommendations}
+\begin{lstlisting}
+POST /ai/recommendations
+{ "customer_id": "c_123", "context": "product_page", "product_id": "p_456", "limit": 8 }
+
+{ "items": [ { "product_id": "p_789", "score": 0.91, "reason": "complete_the_look" } ], "source": "ai" }
+\end{lstlisting}
+
+\textbf{AI-8 Demand forecast}
+\begin{lstlisting}
+{
+  "product_id": "p_456",
+  "horizon_days": 30,
+  "forecast_units": 84,
+  "confidence": "medium",
+  "basis": "24 months of shop and online sales, wedding season uplift",
+  "reorder_advice": { "suggested_units": 60, "reason": "stock lasts about 12 days" }
+}
+\end{lstlisting}
+
+\subsection{Models and Cost \assump}
+\begin{longtable}{L{3.6cm}L{5cm}L{7.9cm}}
+\hdr Item & Choice & Note \\ \endhead
+Text and chat & Hosted LLM API & Small fast model for bill wording and chat; stronger model for descriptions and summaries \\
+Image generation & Hosted image model & Text on posters added by the template engine, not drawn by the model \\
+Embeddings and vector store & Hosted embeddings, pgvector & Move to a dedicated vector DB only if needed \\
+Forecasting & Open-source time-series library & Trained on shop and online sales and imported Tally history \\
+Cost control & Cache, token limits, per-feature monthly cap, alert at 80\% & AI engineer to estimate cost per month \\
+Vendor terms & No training on our data & Confirm before contract \\
+\end{longtable}
+
+\subsection{Prompt Management}
+\begin{itemize}
+\item Prompts live in \code{/ai/prompts/} as versioned files with purpose, variables, output format, owner and change log.
+\item A prompt change needs a pull request and a pass on the test set.
+\end{itemize}
+
+\subsection{Fallbacks}
+\begin{longtable}{L{6cm}L{10.5cm}}
+\hdr Failure & What happens \\ \endhead
+AI wording fails or fails validation & Standard approved WhatsApp template is sent \\
+Recommendations down & Bestsellers and recently viewed \\
+Chatbot down & FAQ page, phone and WhatsApp contact \\
+Smart search fails & Normal keyword search \\
+Description or poster fails & Staff write or design manually; nothing is blocked \\
+Forecast has too little data & Labelled low confidence; category-level trend only \\
+\end{longtable}
+
+\subsection{Data Privacy for AI}
+\begin{itemize}
+\item Send the minimum data. No salary, khata balances of named people, or payment details to external models (balances appear only as placeholders filled locally).
+\item Mask personal data in logs. Keep chat history 90 days; delete on request.
+\item Tell customers when they talk to an AI.
+\item Confirm the vendor's data policy before launch.
+\end{itemize}
+
+\subsection{AI Quality Testing}
+\begin{itemize}
+\item \textbf{WhatsApp wording:} 200 generated messages across languages and tones; zero wrong or missing amounts allowed.
+\item \textbf{Chatbot:} 100-question test set (FAQs, order status, other customers' orders, discount tricks, prompt attacks); 90\% correct before launch.
+\item \textbf{Recommendations:} A/B test against bestsellers; measure click and add-to-cart.
+\item \textbf{Forecasts:} compare with real sales monthly and report error.
+\end{itemize}
+
+%% ---------------- 6 ----------------
+\section{Database Schema}
+\subsection{Main Tables}
+\begin{longtable}{L{2.8cm}L{7cm}L{6.7cm}}
+\hdr Group & Tables & Notes \\ \endhead
+People & \code{staff_users}, \code{roles}, \code{customers}, \code{khata_accounts}, \code{addresses}, \code{whatsapp_optins} & One \code{customers} row per person (unique phone); \code{khata_accounts} holds limit and credit days \\
+Catalog and stock & \code{products}, \code{variants}, \code{barcodes}, \code{categories}, \code{product_images}, \code{stock_levels}, \code{stock_movements}, \code{stock_counts} & Variant has price, MRP, GST rate, HSN, cost, fall-pico flag \\
+Shop sales & \code{bills}, \code{bill_items}, \code{bill_payments}, \code{counters}, \code{cash_registers} & \code{bill_payments} allows split payment (cash, UPI, card, khata) \\
+Khata & \code{ledger_entries}, \code{ledger_allocations}, \code{reminder_rules}, \code{disputes} & Append-only \\
+Online & \code{carts}, \code{cart_items}, \code{orders}, \code{order_items}, \code{order_status_logs}, \code{shipments}, \code{returns}, \code{refunds}, \code{coupons}, \code{wishlists}, \code{reviews} & Orders copy address and prices \\
+Payments & \code{payments}, \code{payment_links}, \code{webhook_events} & Unique gateway IDs prevent double processing \\
+Purchasing & \code{suppliers}, \code{purchases}, \code{purchase_items}, \code{purchase_orders} & Purchase adds stock movements \\
+Tally & \code{tally_outbox}, \code{tally_inbox}, \code{tally_item_map}, \code{tally_ledger_map}, \code{sync_issues}, \code{reconciliation_runs} & Outbox rows carry a unique voucher reference \\
+WhatsApp and messages & \code{message_templates}, \code{message_jobs}, \code{message_events} & \\
+Employees & \code{employees}, \code{attendance}, \code{salary_runs}, \code{salary_lines}, \code{advances}, \code{advance_recoveries}, \code{salary_payments} & \\
+Fall-pico & \code{fp_workers}, \code{fp_jobs}, \code{fp_job_events}, \code{fp_worker_ledger}, \code{fp_incidents}, \code{fp_materials} & \\
+AI & \code{chat_sessions}, \code{chat_messages}, \code{product_embeddings}, \code{forecasts}, \code{buy_suggestions}, \code{ai_usage}, \code{missing_product_requests} & \\
+System & \code{settings}, \code{audit_logs}, \code{feature_flags}, \code{files} & \\
+\end{longtable}
+
+\subsection{Relationships (simple view)}
+\begin{itemize}
+\item A customer has many bills, orders and addresses, and at most one khata account, which has many ledger entries.
+\item A bill or order has many items; a saree item can create a fall-pico job, which has events, one worker and a wage entry.
+\item A variant has one stock level and many stock movements from bills, orders, purchases, returns and Tally imports.
+\item An employee has attendance rows, salary lines, advances and payments.
+\item Every bill, payment, return, purchase, salary and wage can have outbox rows for Tally.
+\end{itemize}
+
+\subsection{Database Rules}
+\begin{itemize}
+\item UUID primary keys; \code{created_at}, \code{updated_at}, \code{created_by} on every table; \code{tenant_id} is not needed (single business).
+\item Money in paise (integers). Dates in UTC, shown in IST.
+\item Financial and stock tables are append-only: no update or delete; reversals only.
+\item Products and customers use soft delete.
+\item Unique constraints on bill number per counter, voucher reference, gateway payment ID and idempotency keys.
+\item Indexes on \code{bills(created_at)}, \code{ledger_entries(account_id, created_at)}, \code{stock_movements(variant_id, created_at)}, \code{tally_outbox(status, created_at)}, \code{fp_jobs(status, worker_id)}.
+\item Migrations through a tool; no manual edits in staging or production. Row-level access checks for salary and khata data.
+\end{itemize}
+\textbf{Added in v1.0:} \code{bill_series} (prefix, financial year, counter, next number) holds the new bill numbering. Every bill and stock movement has a \code{source} (\code{pos}, \code{website}, \code{tally_import}) so Mode A and Mode B can be told apart. \code{tally_inbox} stores the raw vouchers read from Tally. A \code{tally_mode} setting (A or B) records the mode and the cutover date.
+
+%% ---------------- 7 ----------------
+\section{API Documentation}
+\textbf{Base URL:} \code{/api/v1} \quad \textbf{Format:} JSON \quad \textbf{Auth:} \code{Authorization: Bearer <token>} for staff, customers and workers; API key for the Tally agent; signed token for Pay Now links.
+
+\subsection{Standard Response Format}
+\begin{lstlisting}
+{ "success": true, "data": { }, "error": null }
+
+{ "success": false, "data": null,
+  "error": { "code": "CREDIT_LIMIT_EXCEEDED",
+             "message": "Limit crossed by 1200. Manager approval needed." } }
+\end{lstlisting}
+
+\subsection{Common Error Codes}
+\begin{longtable}{L{1.4cm}L{5.6cm}L{9.5cm}}
+\hdr HTTP & Code & Meaning \\ \endhead
+400 & \code{VALIDATION_ERROR} & Wrong or missing input \\
+401 & \code{UNAUTHORIZED} & Not logged in or token expired \\
+403 & \code{FORBIDDEN} & Role not allowed \\
+404 & \code{NOT_FOUND} & Item does not exist \\
+409 & \code{OUT_OF_STOCK} / \code{DUPLICATE} & Conflict; same idempotency key returns the original result \\
+422 & \code{CREDIT_LIMIT_EXCEEDED} / \code{COUPON_INVALID} & Business rule failed \\
+429 & \code{RATE_LIMITED} & Too many requests \\
+500 & \code{SERVER_ERROR} & Unexpected error (sent to Sentry) \\
+\end{longtable}
+
+\subsection{Endpoints}
+{\small
+\begin{longtable}{L{1.8cm}L{1.9cm}L{5.5cm}L{2.8cm}L{4.5cm}}
+\hdr Module & Method & Endpoint & Who & Purpose \\ \endhead
+Auth & POST & \code{/auth/login}, \code{/auth/otp/send}, \code{/auth/otp/verify}, \code{/auth/refresh} & All & Login \\
+Catalog & GET/POST/ PATCH & \code{/products}, \code{/products/:id}, \code{/variants/:id} & Staff / public read & Products \\
+Catalog & POST & \code{/products/import} & Staff & CSV import \\
+Stock & GET & \code{/stock?variant=} & Staff & Current stock \\
+Stock & POST & \code{/stock/adjustments}, \code{/stock/counts} & Manager & Adjust, count \\
+POS & GET & \code{/pos/sync?since=token} & Counter & Pull products, prices, customers \\
+POS & POST & \code{/pos/bills} & Counter & Push bill (idempotent) \\
+POS & POST & \code{/pos/bills/:id/return} & Cashier + approval & Return or exchange \\
+POS & POST & \code{/pos/registers/open}, \code{/pos/registers/close} & Cashier & Cash register \\
+Customers & GET/POST/ PATCH & \code{/customers} & Staff & Find and create \\
+Khata & POST & \code{/khata/accounts} & Manager & Open khata \\
+Khata & GET & \code{/khata/accounts/:id/ledger} & Staff & Ledger \\
+Khata & POST & \code{/khata/accounts/:id/payments} & Cashier & Record payment in shop \\
+Khata & POST & \code{/khata/accounts/:id/adjustments} & Owner & Reversal, write-off \\
+Khata & GET & \code{/khata/reports/ageing} & Owner & Ageing \\
+Portal & GET & \code{/pay/:token} & Customer & Balance and bills for Pay Now \\
+Portal & POST & \code{/pay/:token/start} & Customer & Start a payment \\
+Payments & POST & \code{/webhooks/razorpay} & Signature & Payment confirmation \\
+Messages & POST & \code{/webhooks/whatsapp} & Signature & Delivery status, replies \\
+Messages & POST & \code{/messages/:id/resend} & Staff & Resend bill \\
+Website & GET & \code{/store/products}, \code{/store/search}, \code{/store/categories} & Public & Browse \\
+Website & CRUD & \code{/store/cart}, \code{/store/checkout}, \code{/store/orders} & Customer & Buy \\
+Orders & GET/PATCH & \code{/orders}, \code{/orders/:id/status} & Staff & Online order handling \\
+Shipping & POST & \code{/orders/:id/shipment} & Staff & Create courier shipment \\
+Purchasing & POST/GET & \code{/purchases}, \code{/suppliers} & Staff & Stock-in \\
+Employees & CRUD & \code{/employees}, \code{/employees/:id/attendance} & Manager/ Owner & Staff records \\
+Payroll & POST & \code{/payroll/runs}, \code{/payroll/runs/:id/approve} & Owner/ Accountant & Salary \\
+Payroll & POST & \code{/employees/:id/advances}, \code{/employees/:id/salary-payments} & Owner & Advance, payment \\
+Payroll & GET & \code{/me/statement} & Employee & Own statement \\
+Fall-pico & GET/POST & \code{/fp/jobs}, \code{/fp/jobs/:id/assign}, \code{/fp/jobs/:id/status} & Supervisor & Job flow \\
+Fall-pico & GET/POST & \code{/fp/workers}, \code{/fp/workers/:id/payments} & Supervisor/ Owner & Workers and wages \\
+Tally agent & GET & \code{/tally/outbox/pending} & Agent key & Pull work \\
+Tally agent & POST & \code{/tally/outbox/:id/result} & Agent key & Report success or error \\
+Tally agent & POST & \code{/tally/inbox} & Agent key & Send changes made in Tally \\
+Tally & GET & \code{/tally/issues}, \code{/tally/reconciliation} & Accountant & Sync issues and reports \\
+AI & POST & \code{/ai/*} (internal) & API only & AI service \\
+Reports & GET & \code{/reports/dashboard}, \code{/reports/sales}, \code{/reports/gst} & Owner/ Accountant & Reports \\
+Settings & GET/PATCH & \code{/settings} & Admin/Owner & Rules and integrations \\
+\end{longtable}
+}
+
+\subsection{Sample: Push a Khata Bill from POS}
+\begin{lstlisting}
+POST /api/v1/pos/bills
+{
+  "idempotency_key": "C1-26-000123",
+  "counter_id": "C1",
+  "customer_id": "c_123",
+  "items": [ { "variant_id": "v_88", "qty": 1, "price": 249900 } ],
+  "payments": [ { "mode": "CASH", "amount": 100000 },
+                { "mode": "KHATA", "amount": 149900 } ],
+  "sold_by": "staff_7",
+  "created_at_device": "2026-10-05T11:42:10+05:30"
+}
+
+Response:
+{
+  "success": true,
+  "data": {
+    "bill_id": "b_9001",
+    "bill_no": "C1-26-000123",
+    "khata_new_balance": 349900,
+    "fall_pico_jobs": [ "fp_2210" ],
+    "queued": [ "whatsapp", "tally" ]
+  },
+  "error": null
+}
+\end{lstlisting}
+Sending the same \code{idempotency_key} again returns this same response and creates nothing new. Document the full API in Swagger/OpenAPI (generated by FastAPI at \code{/docs}) and keep a Postman collection in the repo.
+
+%% ---------------- 8 ----------------
+\section{UI/UX Guidelines}
+\subsection{Interfaces}
+\begin{longtable}{L{3cm}L{6.5cm}L{7cm}}
+\hdr Interface & Users & Notes \\ \endhead
+Website & Online customers & Mobile first, fast, SEO friendly \\
+Back office & Owner, manager, accountant, online order staff, supervisor & Desktop first, works on tablet \\
+POS & Cashiers & Full screen, scan first, big buttons, works offline \\
+Simple pages & Workers, employees, khata customers & Phone friendly, very few options, large text, Hindi labels where needed \\
+\end{longtable}
+
+\subsection{Sitemap}
+\textbf{Website}
+\begin{itemize}
+\item Home $\rightarrow$ Category $\rightarrow$ Product $\rightarrow$ Cart $\rightarrow$ Checkout $\rightarrow$ Confirmation
+\item Search, Account (profile, addresses, orders, wishlist), Login
+\item Help and policies (returns, shipping, fall-pico, privacy, terms, contact), AI chat
+\end{itemize}
+\textbf{POS}
+\begin{itemize}
+\item Billing $\rightarrow$ Customer $\rightarrow$ Payment (cash / UPI / card / khata / split) $\rightarrow$ Print or WhatsApp
+\item Hold bills, Returns, Cash register, Day close, Sync status
+\end{itemize}
+\textbf{Back office}
+\begin{itemize}
+\item Dashboard
+\item Catalog (products, stock, labels, stock count)
+\item Sales (bills, online orders, returns, shipments)
+\item Khata (customers, ledgers, ageing, reminders, messages)
+\item Purchasing (suppliers, purchases)
+\item People (employees, attendance, salary, advances)
+\item Fall-pico (job board, workers, wages, cost)
+\item Tally (sync status, issues, reconciliation, mapping)
+\item Reports, AI tools (poster maker, descriptions, trends, what to buy), Settings
+\end{itemize}
+\textbf{Simple pages}
+\begin{itemize}
+\item Customer: Pay Now $\rightarrow$ balance $\rightarrow$ pay $\rightarrow$ receipt; ledger and bills
+\item Employee: my attendance, salary, advance, balance
+\item Worker: my jobs, my earnings
+\end{itemize}
+
+\subsection{Design System \assump{} (designer to finalise)}
+\begin{longtable}{L{3cm}L{13.5cm}}
+\hdr Item & Rule \\ \endhead
+Style & Website: clean, fashion-first, large product photos. Back office and POS: plain, fast, high contrast \\
+Colors & Primary black \texttt{\#111111}; accent to be chosen from brand; success \texttt{\#1E8E3E}; warning \texttt{\#F9AB00}; error \texttt{\#D93025}; background \texttt{\#FFFFFF} / \texttt{\#F7F7F7} \\
+Fonts & Website heading: modern serif or display font; body and tools: Inter or similar, with Devanagari fallback \\
+Sizes & 12, 14, 16, 20, 24, 32 px; POS text at least 16 px \\
+Spacing & 4 px grid \\
+Buttons & Primary, secondary, text; minimum height 44 px; POS main buttons at least 56 px \\
+Money display & Always in INR with thousands separators (for example 1,49,900 paise is shown as 1,499), negative balances clearly marked \\
+Status colors & Same colors everywhere: green done, amber pending, red overdue or error \\
+Responsive & Mobile first; breakpoints 360, 768, 1024, 1440 px \\
+Accessibility & Contrast 4.5:1, alt text, keyboard use (POS shortcuts) \\
+States & Every component needs hover, focus, disabled, loading, empty, error and offline states \\
+\end{longtable}
+
+\subsection{Key User Flows}
+\begin{enumerate}
+\item \textbf{Cash bill:} Scan items $\rightarrow$ discount if allowed $\rightarrow$ cash $\rightarrow$ print or WhatsApp $\rightarrow$ next bill. No more than 3 screens.
+\item \textbf{Khata bill:} Find customer by phone $\rightarrow$ scan items $\rightarrow$ choose khata $\rightarrow$ see balance and limit $\rightarrow$ confirm $\rightarrow$ bill sent on WhatsApp.
+\item \textbf{Customer pays dues:} Open WhatsApp link $\rightarrow$ see balance $\rightarrow$ choose amount $\rightarrow$ pay UPI $\rightarrow$ receipt.
+\item \textbf{Saree with fall-pico:} Bill saree $\rightarrow$ prompt: fall-pico yes $\rightarrow$ tag printed $\rightarrow$ supervisor assigns $\rightarrow$ worker finishes $\rightarrow$ QC $\rightarrow$ customer told.
+\item \textbf{Month-end salary:} Check attendance $\rightarrow$ review salary draft $\rightarrow$ see advance recovery $\rightarrow$ approve $\rightarrow$ record payment.
+\item \textbf{Online order:} Search or browse $\rightarrow$ product $\rightarrow$ size help $\rightarrow$ cart $\rightarrow$ checkout $\rightarrow$ pay $\rightarrow$ track.
+\end{enumerate}
+
+\subsection{Design Deliverables}
+Figma file with design system, POS screens (counter and tablet), back-office screens, website (desktop and mobile), simple pages, offline and error states, and a clickable prototype for flows 1 to 4. Developers get Dev Mode access. The POS flow is tested with a real cashier before development continues.
+
+%% ---------------- 9 ----------------
+\section{Team Roles and Sprint Plan}
+\subsection{Roles \assump{} (5 members)}
+\begin{longtable}{L{3.6cm}L{8.2cm}L{4.7cm}}
+\hdr Role & Owns & Also helps with \\ \endhead
+Frontend and POS developer & POS app (offline), back-office UI, website, simple pages & Design QA \\
+Backend developer (lead) & Core API, stock, billing, khata ledger, payroll, fall-pico, database, hosting & CI/CD \\
+Integration developer & Tally sync agent, WhatsApp, Razorpay, courier, SMS and email & Reconciliation and reports \\
+AI engineer & AI service, WhatsApp wording and validator, recommendations, chatbot, forecasts & Data pipelines, search \\
+PM, QA and design lead & SRS, planning, Figma, test cases, UAT, client and accountant communication & Training and handover \\
+\end{longtable}
+One person doing PM, QA and design is a lot. A part-time designer or freelancer for Figma work is recommended \tbd.
+
+\subsection{Sprint Plan (2-week sprints) \assump{} (to be re-estimated after SRS sign-off)}
+{\footnotesize
+\begin{longtable}{L{0.6cm}L{1cm}L{1.6cm}L{2.7cm}L{2.7cm}L{3cm}L{2.1cm}L{2.5cm}}
+\hdr S & Weeks & Focus & Frontend / POS & Backend & Integration & AI & PM / QA / Design \\ \endhead
+0 & 1-2 & Setup & Repo (pnpm), UI base, route shells & FastAPI base, database, auth, CI & Check latest TallyPrime on the cloud server, test agent, WhatsApp template request, Razorpay sandbox & AI service skeleton, vendor keys & SRS sign-off, Figma system, Tally data sample check, test plan \\
+1 & 3-4 & Import and stock & Product and stock screens, labels & Catalog, stock ledger, CSV import, bill series settings & Agent reads Tally: items, parties (khata customers), opening balances & Event tables & Data check report, stock test cases \\
+2 & 5-6 & Tally sync (Mode A) & Sync status, Sync Issues and reconciliation screens & Import sales, returns, purchases and stock from Tally; stock movements & Tally to FashionOS import; online orders and receipts to Tally & Reports queries & Mode A tests, M2 \\
+3 & 7-8 & Khata and WhatsApp & Khata and ledger screens & Ledger from imported bills, limits, reminders, ageing & WhatsApp send and webhooks; match Tally party ledgers to customers & Bill wording and validator & Ledger tests \\
+4 & 9-10 & Pay from home & Pay Now pages & Payment links, allocation, receipts & Razorpay links and webhooks, Tally receipt vouchers & 200-message wording test & Payment tests, M3 (khata and WhatsApp live in the shop) \\
+5 & 11-12 & POS billing & POS billing screen, offline queue, printing & Bills, GST, bill series, returns, cash register & Tally sales vouchers from POS (Mode B), scanner and printer & Data pipelines & Offline test plan \\
+6 & 13-14 & Employees, purchasing, POS parallel run & Attendance, salary, purchase screens & Payroll engine, advances, purchases & Tally purchase and salary vouchers & Data pipelines & Payroll tests with accountant; parallel run starts \\
+7 & 15-16 & Fall-pico & Job board, worker pages, tags & Jobs from POS and imported bills, wages, QC & Courier setup, Tally wage entries & Recommendation data pipeline & Fall-pico tests, M4 \\
+8 & 17-18 & Website & Storefront, cart, checkout, account, tracking & Store APIs, orders, returns, fall-pico online stage & Razorpay checkout, Shiprocket, settlement match & Search indexing, fallback recommendations & UAT, M5 \\
+9 & 19-20 & Hardening and cutover & Fixes, performance, SEO (prerender) & Security, load test, cutover rehearsal & Reconciliation checks, Tally backup checks & AI tuning & Training, bill series approval, cutover, M6 \\
+\end{longtable}
+}
+Phase 2 (AI features) starts after go-live.
+
+\subsection{Task Board Rules}
+\begin{itemize}
+\item Tool: Jira, Trello or Notion \tbd. Columns: Backlog, Ready, In Progress, In Review, QA, Done.
+\item Every task has an owner, estimate, due date, linked requirement ID (for example \req{FR-KHT-02}) and acceptance criteria from the SRS.
+\item \textbf{Definition of Done:} code reviewed, tests pass, deployed to dev, QA checked, SRS and this document updated.
+\item Daily 10-minute standup; sprint planning and review every 2 weeks; demo to the client and the accountant at each milestone.
+\end{itemize}
+
+%% ---------------- 10 ----------------
+\section{Developer Guide}
+\subsection{Repository Structure}
+\begin{lstlisting}
+fashionos/
+  apps/
+    web/            # React + Vite + TypeScript
+      src/routes/   # storefront | backoffice | pos | portal
+      src/features/ # catalog, inventory, khata, pos, fall-pico, tally, ...
+      src/lib/      # api, auth, permissions, i18n, offline, money
+    api/            # FastAPI modular monolith
+      app/core/     # config, db, money, audit, outbox, idempotency
+      app/modules/  # auth, catalog, inventory, customers, pos, khata, payments,
+                    # orders, shipping, purchasing, employees, fall_pico,
+                    # notifications, tally, analytics, settings
+                    # (each: router, schemas, service, repository, models, events)
+      app/integrations/ # razorpay, whatsapp, shiprocket, sms, email, ai_client
+      alembic/      # database migrations
+      tests/
+    ai-service/     # FastAPI: recommend, demand, embeddings, banners, vision, evals
+    worker/         # Celery: outbox, reminders, tally_sync, reconciliation
+    tally-bridge/   # Python agent on the Tally cloud server
+  packages/         # shared-types, config
+  database/         # seeds, policies (append-only SQL)
+  docs/             # SRS, ADRs, runbooks
+  infrastructure/   # docker, caddy, deployment, monitoring
+  tests/            # e2e, contracts, load, offline-sync, tally-sync
+  scripts/          # new_module.py
+  docker-compose.yml, .env.example, pnpm-workspace.yaml
+\end{lstlisting}
+This is the layout of the project skeleton (\code{FashionOS_project_skeleton.zip}). Add files in the build order; do not create empty files just to match the tree.
+
+\subsection{Coding Standards}
+\begin{itemize}
+\item Backend and AI service: Python 3.11+ with type hints everywhere and Pydantic for all input and output. Web: TypeScript (strict). Tally agent: Python.
+\item Format and lint: Ruff and Black (Python); ESLint and Prettier (web). Pre-commit hooks and CI enforce them.
+\item Names: \code{snake_case} in Python and database columns; \code{camelCase} variables and \code{PascalCase} components in TypeScript; \code{kebab-case} folders and files in the web app.
+\item Money is always an integer in paise, never a float (\code{app/core/money.py}, \code{src/lib/money.ts}).
+\item Every API input is validated. No secrets or personal data in logs.
+\item Anything that writes to stock, ledgers, salary or the outbox goes through a service function with one transaction and an audit entry. Routers never write to tables directly.
+\item Every bill and every webhook uses an idempotency key.
+\item Ledger, stock movement and audit tables are append-only, enforced by \code{database/policies}. Fix mistakes with a reversing entry.
+\item Database changes only through Alembic migrations.
+\item Comment the \emph{why}, not the \emph{what}.
+\end{itemize}
+
+\subsection{Git Workflow}
+\begin{longtable}{L{5.5cm}L{11cm}}
+\hdr Branch & Purpose \\ \endhead
+\code{main} & Production, protected \\
+\code{release} & Staging \\
+\code{develop} & Integration \\
+\code{feature/FR-KHT-02-credit-sale} & New work, from \code{develop} \\
+\code{fix/webhook-duplicate} & Bug fixes \\
+\end{longtable}
+\begin{itemize}
+\item Commits: \code{feat(khata): add credit limit check} (Conventional Commits).
+\item A pull request needs 1 approval, and 2 approvals for money, stock, ledger, payroll and Tally code, plus passing CI.
+\item Keep pull requests under 400 changed lines. Squash merge.
+\end{itemize}
+
+\subsection{Environment Setup (new developer, target 30 minutes)}
+\begin{enumerate}
+\item Install Python 3.11+, Node 20+, pnpm and Docker.
+\item Clone the repo and copy \code{.env.example} to \code{.env}; get sandbox keys from the team lead.
+\item Run \code{docker compose up -d} (PostgreSQL with pgvector, Redis).
+\item API: in \code{apps/api} create a virtual environment, run \code{pip install -r requirements.txt}, \code{alembic upgrade head}, then \code{uvicorn app.main:app --reload --port 8000}. API docs open at \code{http://localhost:8000/docs}.
+\item Web: from the repo root run \code{pnpm install}, then \code{pnpm dev:web} (opens on \code{http://localhost:5173}).
+\item Worker and AI: in \code{apps/worker} run \code{celery -A app.celery_app worker -B}; in \code{apps/ai-service} run \code{uvicorn app.main:app --port 8001}.
+\item Tally work: use a TallyPrime demo company on a Windows machine or a test cloud server and run the agent in \code{apps/tally-bridge} against it. \textbf{Never test on the real company data.}
+\item Run the API tests with \code{pnpm test:api}.
+\end{enumerate}
+
+\subsection{Environment Variables}
+\begin{longtable}{L{8cm}L{8.5cm}}
+\hdr Variable & Purpose \\ \endhead
+\code{DATABASE_URL}, \code{REDIS_URL} & Database and queue \\
+\code{JWT_SECRET}, \code{JWT_REFRESH_SECRET}, \code{PAYLINK_SECRET} & Tokens (login, Pay Now links) \\
+\code{RAZORPAY_KEY_ID}, \code{RAZORPAY_KEY_SECRET}, \code{RAZORPAY_WEBHOOK_SECRET} & Payments \\
+\code{WHATSAPP_PROVIDER_URL}, \code{WHATSAPP_API_KEY}, \code{WHATSAPP_WEBHOOK_SECRET} & WhatsApp \\
+\code{SMS_API_KEY}, \code{SMS_SENDER_ID}, \code{SES_*} & SMS and email \\
+\code{SHIPROCKET_EMAIL}, \code{SHIPROCKET_PASSWORD} & Courier \\
+\code{TALLY_AGENT_API_KEY} & Agent identity (set on the agent, checked by the API) \\
+\code{AWS_S3_BUCKET}, \code{AWS_ACCESS_KEY}, \code{AWS_SECRET_KEY} & Files \\
+\code{AI_API_KEY}, \code{AI_MODEL_TEXT}, \code{AI_MODEL_EMBED}, \code{AI_MODEL_IMAGE}, \code{AI_SERVICE_URL}, \code{AI_MONTHLY_BUDGET} & AI service \\
+\code{SENTRY_DSN} & Error tracking \\
+\end{longtable}
+Never commit \code{.env}. Keep keys in a secrets manager for staging and production.
+
+%% ---------------- 11 ----------------
+\section{Security and Performance Checklist}
+\subsection{Security}
+\begin{longtable}{L{0.8cm}L{10.4cm}L{3.4cm}L{1.4cm}}
+\hdr \# & Check & Owner & Done \\ \endhead
+1 & HTTPS everywhere, HSTS & DevOps & \chk \\
+2 & Passwords hashed (argon2 or bcrypt); 2FA for Owner and Admin & Backend & \chk \\
+3 & Role checks on every API and screen; employee, worker and customer see only their own data & Backend & \chk \\
+4 & Salary and khata data encrypted at rest; access logged & Backend & \chk \\
+5 & Append-only ledgers: database permissions block update and delete on ledger and stock tables & Backend & \chk \\
+6 & Audit log complete and not editable & Backend & \chk \\
+7 & Pay Now tokens unguessable, expiring, rate limited, show only that customer's data & Backend & \chk \\
+8 & Razorpay and WhatsApp webhooks verified by signature; duplicates ignored & Integration & \chk \\
+9 & Tally agent: own API key, outbound HTTPS only, key revocable, signed updates & Integration & \chk \\
+10 & Prices, discounts and GST calculated on server only & Backend & \chk \\
+11 & POS local data (IndexedDB) holds no card data; devices lock after inactivity; owner can sign out a lost device & Frontend & \chk \\
+12 & WhatsApp opt-in recorded; opt-out honoured; quiet hours respected & Integration & \chk \\
+13 & Input validation and sanitising (injection, XSS), CSRF protection & All & \chk \\
+14 & Rate limits on login, OTP, payment links, chatbot & Backend & \chk \\
+15 & Secrets in a secrets manager; keys rotated before launch & DevOps & \chk \\
+16 & File upload checks (type, size, scan) & Backend & \chk \\
+17 & AI tests: prompt injection, data leak, wrong amounts & AI & \chk \\
+18 & Dependency scans in CI & DevOps & \chk \\
+19 & Daily backups; restore tested; backup of Tally data confirmed with the accountant & DevOps & \chk \\
+20 & Privacy notice, consent, deletion process for customers, employees and workers & PM & \chk \\
+\end{longtable}
+
+\textbf{Added for Tally on the cloud (v1.0):}
+\begin{longtable}{L{0.8cm}L{10.4cm}L{3.4cm}L{1.4cm}}
+\hdr \# & Check & Owner & Done \\ \endhead
+21 & Cloud Tally server in India, open only to named users, two-factor where the host offers it & DevOps + Accountant & \chk \\
+22 & Tally's local interface not reachable from the public internet; only the agent uses it & Integration & \chk \\
+23 & Daily Tally company backup kept apart from the server; restore tested & DevOps & \chk \\
+24 & Agent set to start automatically; alert if it stops & Integration & \chk \\
+25 & Remote access to the Tally server reviewed: no shared logins, record of who logged in & Accountant & \chk \\
+\end{longtable}
+
+\subsection{Performance}
+\begin{longtable}{L{7cm}L{9.5cm}}
+\hdr Target & Value \\ \endhead
+POS: item appears after scan & Under 1 second \\
+Website LCP (mobile, 4G) & Under 2.5 seconds \\
+API response (95th percentile) & Under 400 ms \\
+Load test & 1 counter billing (tested up to 3) plus 500 shoppers and 100 orders per minute, errors under 1\% \\
+Sync & POS queue clears within 1 minute of internet returning \\
+\end{longtable}
+Techniques: CDN, WebP images, Redis cache for product lists, database indexes, server rendering for website pages, local cache in POS.
+
+\subsection{SEO Checklist (website)}
+\begin{itemize}
+\item Unique title and description per page; clean URLs (\code{/sarees/silk/kanjivaram-red}).
+\item Product structured data (price, availability, reviews); \code{sitemap.xml}, \code{robots.txt}, canonical and Open Graph tags.
+\item Image alt text; fast mobile pages.
+\end{itemize}
+
+%% ---------------- 12 ----------------
+\section{Test Plan}
+\subsection{Test Types and Tools}
+\begin{longtable}{L{3cm}L{6.5cm}L{7cm}}
+\hdr Type & What & Tool \assump \\ \endhead
+Unit & Ledger, stock, payroll, GST, fall-pico rules & Jest, Pytest \\
+API & Endpoints, errors, idempotency & Postman/Newman, Supertest \\
+End-to-end & POS, khata, website journeys & Playwright \\
+Offline & POS with internet cut and restored & Playwright with network off, real counter test \\
+Integration & Tally (demo company), WhatsApp sandbox, Razorpay test mode & Scripted tests + manual checks by accountant \\
+Reconciliation & FashionOS vs Tally totals & Daily report during staging \\
+Performance & Load & k6 \\
+Security & Vulnerabilities, access & OWASP ZAP, manual review \\
+AI quality & Wording, chatbot, recommendations & Test sets + review \\
+UAT & Owner, cashier, accountant, supervisor & Staging \\
+\end{longtable}
+
+\subsection{Core Test Cases (examples; full list tracked in the test tool)}
+{\small
+\begin{longtable}{L{1cm}L{2cm}L{6cm}L{7.5cm}}
+\hdr ID & Area & Test & Expected result \\ \endhead
+T01 & POS & 3-item cash bill & Bill printed, stock down on website, Tally sales voucher within 5 min \\
+T02 & POS & Split payment: cash + UPI + khata & Each part recorded; khata part added to ledger \\
+T03 & POS & Discount above role limit & Manager PIN asked; approval logged \\
+T04 & POS & Internet off, make 5 bills, turn on & All 5 synced once, no duplicate numbers \\
+T05 & Stock & Last unit bought at shop and online together & One succeeds; other gets clear message \\
+T06 & Khata & Credit sale within limit & Ledger entry; WhatsApp bill with correct amounts in 1 minute \\
+T07 & Khata & Credit sale over limit & Blocked; manager override logged with reason \\
+T08 & WhatsApp & AI text has a wrong amount & Standard template sent with correct amount \\
+T09 & WhatsApp & Customer without opt-in, or number not on WhatsApp & No message / SMS fallback and flag \\
+T10 & Pay Now & Customer pays part amount & Balance falls, receipt on WhatsApp, Tally receipt voucher \\
+T11 & Pay Now & Same webhook delivered twice & Only one ledger entry \\
+T12 & Pay Now & Expired link or another customer's link & Access denied \\
+T13 & Ledger & Try to edit or delete an entry & Denied; reversal works and both show \\
+T14 & Ledger & Daily integrity check on a deliberately changed test balance & Difference reported \\
+T15 & Tally & Tally closed, 20 bills made, Tally opened & 20 vouchers synced once each, in order \\
+T16 & Tally & Sale entered directly in Tally & Website and shop stock drop within 5 minutes \\
+T17 & Tally & Deliberate mismatch in staging & Reconciliation report lists it \\
+T18 & Returns & Return of a khata bill & Balance reduced; credit note in Tally \\
+T19 & Payroll & 24 payable days, salary 15,000, advance 5,000 with 1,000 recovery, 6,000 paid & Earned 12,000; net 11,000; pending 5,000; advance balance 4,000 \\
+T20 & Payroll & Advance above limit & Owner approval needed \\
+T21 & Privacy & Employee views own statement; manager tries salary & Own only; manager denied \\
+T22 & Fall-pico & Saree at 1,000 and at 1,001 & No job at 1,000; job at 1,001 \\
+T23 & Fall-pico & Job with QC fail and rework & Rework not paid twice; worker statement correct \\
+T24 & Fall-pico & Online saree order & Cannot be packed until QC passed or skipped \\
+T25 & Website & UPI order success & Webhook confirms; GST invoice; Tally voucher \\
+T26 & Website & Payment fails then retry; double click on Pay & One order, one charge \\
+T27 & Website & COD order and remittance & Matches courier remittance report \\
+T28 & Website & Online customer at checkout & No khata or credit option \\
+T29 & Access & Cashier tries a write-off & Denied (403) \\
+T30 & Mobile & Full purchase on a 360 px phone & No layout break \\
+T31 & Performance & Load test from 11.2 & Errors under 1\% \\
+T32 & AI & AI service off & Billing, checkout, payments work; fallbacks shown \\
+T33 & AI (Phase 2) & Chatbot asked for another person's order or a 90\% discount & Refused politely \\
+\end{longtable}
+}
+
+\textbf{Added tests for Mode A and cloud Tally (v1.0):}
+{\small
+\begin{longtable}{L{1cm}L{2cm}L{6cm}L{7.5cm}}
+\hdr ID & Area & Test & Expected result \\ \endhead
+T34 & Mode A & Sale made in TallyPrime & Website stock drops within 5 minutes; sale saved once \\
+T35 & Mode A & Khata bill made in TallyPrime & WhatsApp bill after import, amounts match the Tally ledger \\
+T36 & Mode A & Khata bill with an unmatched party & Goes to Sync Issues; no message sent \\
+T37 & Bill series & Bills made in Mode B & New series is unique and in running order; old series untouched \\
+T38 & Cloud Tally & Tally server restarted & Agent starts by itself; waiting items clear in order, no duplicates \\
+T39 & Cloud Tally & Tally unreachable for over 30 minutes & Alert is sent; items wait; nothing lost \\
+T40 & Counter & Internet off while billing in cloud Tally & Paper bill book used; bills entered later with original date and time \\
+T41 & Mode A & Saree above the fall-pico limit billed in Tally & Fall-pico job created from the imported bill \\
+\end{longtable}
+}
+
+\subsection{Bug Severity}
+\begin{longtable}{L{2cm}L{10cm}L{4.5cm}}
+\hdr Level & Meaning & Fix time \\ \endhead
+Critical & Wrong money, stock or ledger; lost or duplicate bills or vouchers; data leak; billing down & Same day \\
+High & Main feature fails, no workaround & 2 days \\
+Medium & Feature fails, workaround exists & Current sprint \\
+Low & Cosmetic & Backlog \\
+\end{longtable}
+A bug report has steps, expected vs actual result, screenshot or video, device or browser, and severity.
+
+\subsection{Release Gate (must be true to go live)}
+\begin{itemize}
+\item No Critical or High bugs open; T01 to T41 pass on staging.
+\item The two-week parallel run shows zero unexplained difference between FashionOS and Tally totals and between FashionOS and the shop's old khata book.
+\item Security checklist done; backup restore tested.
+\item Message templates approved; payment gateway live; courier account live.
+\item Owner, accountant and shop staff sign off UAT.
+\end{itemize}
+
+%% ---------------- 13 ----------------
+\section{Deployment and Go-Live Guide}
+\subsection{Release Steps (Production)}
+\begin{enumerate}
+\item Freeze code on \code{release}; confirm staging passed the release gate (12.4).
+\item Merge \code{release} into \code{main} and tag the version (for example \code{v1.0.0}).
+\item Take a database backup.
+\item CI builds Docker images and runs tests.
+\item Tech lead and PM approve the deploy.
+\item Run database migrations (backward compatible only).
+\item Deploy API, AI service, web and POS (rolling, no downtime). POS devices pick up the new version at next start; a version check warns if a device is too old.
+\item Smoke test: log in, make a cash bill, make a khata bill (check WhatsApp and Tally), pay through Pay Now with a small amount, place a test website order, check dashboard.
+\item Watch Sentry and logs for 1 hour; tell the team and the client.
+\end{enumerate}
+
+\subsection{Installing the Tally Sync Agent (Cloud Tally Server)}
+\begin{enumerate}
+\item Confirm the host of the Tally cloud server (India), the latest TallyPrime version, the licence for several users (counter, accountant, agent), and who may log in.
+\item Back up the Tally company data.
+\item Move the company data to the server and check it with the accountant (counts of ledgers and stock items, closing balances).
+\item Install the agent as a Windows service on the same server. Set it to start with the server and to keep running when users log out. Enter the API key from FashionOS settings.
+\item Keep Tally open with the company loaded and its local XML/HTTP access enabled \todo{verify for the latest TallyPrime}. This interface is only for the agent; never open it to the internet.
+\item Run the mapping setup (ledgers, GST ledgers, voucher types, godown) and the check screen.
+\item Test on a test company first: send a test sales voucher and a test receipt, and read some vouchers back (Tally to FashionOS). The accountant checks them.
+\item Switch to the real company only after the accountant approves, and start in Mode A.
+\item Write the runbook: how to restart the agent, where its log is, what to do when Tally is closed or the server restarts, and how to restore from backup.
+\end{enumerate}
+
+\subsection{Data Migration and Parallel Run}
+\begin{longtable}{L{3.6cm}L{4.4cm}L{8.5cm}}
+\hdr Data & Source & Check \\ \endhead
+Items and stock & Tally stock items and a physical count & Count matches system on a sample of 100 items \\
+Customers and khata balances & Tally party ledgers (Sundry Debtors); khata is kept in Tally & Every balance signed off by the owner; total matches Tally Sundry Debtors \\
+Suppliers & Tally & Totals match \\
+Employees, advances, salary history & Owner's records & Owner and each employee confirm their balance \\
+Fall-pico workers and open jobs & Supervisor's register & Open jobs entered with tags \\
+\end{longtable}
+\textbf{Parallel run (2 weeks):} the shop bills in FashionOS and also keeps the old method (Tally entry or paper bill). Every day the accountant compares the day totals, khata changes and stock. Any difference is explained and fixed before go-live. Customer WhatsApp messages stay on for a few friendly customers first, then everyone.
+
+\subsection{Rollback and Contingency}
+\begin{itemize}
+\item \textbf{Software problem after a release:} redeploy the previous image tag; if a migration caused it, run the down-migration or restore the backup; switch off new features with feature flags (AI can be switched off without redeploy). Decision owner: tech lead; PM and client told within 15 minutes.
+\item \textbf{Internet problem at the counter while billing in cloud Tally (Mode A):} use the backup internet connection, or the paper bill book and enter the bills later with their original date and time (FR-MIG-08).
+\item \textbf{After cutover (Mode B):} the POS keeps billing offline. If the POS itself fails, use the paper bill book, or bill in Tally and let FashionOS import the bills (FR-TLY-07).
+\item \textbf{Tally server or agent problem:} items wait in the outbox and nothing is lost. Fix and restart the agent, restore Tally from backup if needed, then check the Sync Issues screen.
+\item \textbf{WhatsApp provider outage:} SMS fallback; reminders pause automatically.
+\item \textbf{Cutover rollback:} switch the counter back to Mode A (billing in Tally) within one working day, and export the bills made in FashionOS to Tally.
+\item Write a short incident note after every incident: what happened, impact, fix, how to prevent.
+\end{itemize}
+
+\subsection{Monitoring and Alerts}
+\begin{itemize}
+\item Uptime check every minute on website and \code{/health}; alerts to Slack or WhatsApp for 5xx spikes, payment failures, slow responses, database or Redis down, POS sync backlog, Tally outbox older than 30 minutes, WhatsApp failures above 5\%, AI cost above 80\% of budget.
+\item Dashboards: bills per hour, sync backlog, Tally sync success, message delivery, payment success, AI latency and cost.
+\end{itemize}
+
+\subsection{Go-Live Checklist}
+\begin{longtable}{L{10.5cm}L{4.4cm}L{1.6cm}}
+\hdr Item & Owner & Done \\ \endhead
+Domain, SSL, DNS ready & DevOps & \chk \\
+Razorpay live, webhook URL set & Integration & \chk \\
+WhatsApp templates approved; opt-ins recorded for khata customers & Integration + Owner & \chk \\
+SMS DLT registration done & Integration & \chk \\
+Courier account live & Integration & \chk \\
+Tally agent running; mapping approved; test vouchers matched & Integration + Accountant & \chk \\
+Opening stock, customers, balances, staff data signed off & Owner + Accountant & \chk \\
+Parallel run shows no unexplained difference & PM + Accountant & \chk \\
+Barcode labels on stock; scanners and printers tested at each counter & PM & \chk \\
+Staff trained (14.6); paper bill book ready as backup & PM & \chk \\
+Admin accounts created; default passwords removed; 2FA on for Owner & Backend & \chk \\
+Backups and monitoring active; restore tested & DevOps & \chk \\
+Policy pages, privacy notice and return rules published & PM + Owner & \chk \\
+\end{longtable}
+
+\textbf{Added for the Tally cloud move and the new bill series (v1.0):}
+\begin{longtable}{L{10.5cm}L{4.4cm}L{1.6cm}}
+\hdr Item & Owner & Done \\ \endhead
+Tally cloud server live in India; latest TallyPrime; licence for several users confirmed & Owner + Accountant & \chk \\
+Backup internet connection at the counter, or paper bill book ready & Owner & \chk \\
+Agent running as a service on the Tally server; alerts tested & Integration & \chk \\
+New bill number series approved by the accountant under GST rules & Accountant & \chk \\
+Tally data quality sample checked and cleaned (duplicate parties, phone numbers, item names) & Accountant + PM & \chk \\
+\end{longtable}
+
+%% ---------------- 14 ----------------
+\section{Staff Handover and Training Manual}
+\textit{Written in simple language for the owner and shop staff. No technical knowledge needed.}
+
+\subsection{What You Receive}
+\begin{itemize}
+\item Website and back-office links, POS installed on each counter, and a logged-in test account for practice.
+\item A separate login for every staff member (never share logins).
+\item This documentation, the SRS, design files and source code access.
+\item Recorded training videos, a one-page quick guide per role, and 30 days of free support \assump.
+\end{itemize}
+
+\subsection{Daily Tasks}
+\begin{note}
+Until cutover (Mode A) the counter keeps billing in TallyPrime as today. The rows that say \textbf{POS} apply after the counter moves to the FashionOS POS.
+\end{note}
+{\small
+\begin{longtable}{L{2.8cm}L{1.8cm}L{3.2cm}L{8.7cm}}
+\hdr Task & Who & Where & Steps \\ \endhead
+Make a cash bill & Cashier & POS & Scan each item, check the total, choose Cash, take money, press Done, print or send on WhatsApp \\
+Make a khata (udhar) bill & Cashier & POS & Find the customer by phone, scan items, choose Khata, check balance and limit, press Done. The customer gets the bill on WhatsApp \\
+Customer is over the limit & Manager & POS & The screen warns. Only a manager or owner can allow it, with a reason \\
+Take a khata payment in the shop & Cashier & Khata $\rightarrow$ customer $\rightarrow$ Receive payment & Enter amount and mode, save. The balance and Tally update by themselves \\
+Customer says they paid from home & Cashier & Khata $\rightarrow$ customer $\rightarrow$ Ledger & Check the payment in the ledger; if missing, wait 10 minutes, then call support with the customer's phone \\
+Return an item & Cashier & POS $\rightarrow$ Returns & Find the original bill, choose items, choose refund or credit note, manager approves \\
+Close the day & Cashier / Manager & POS $\rightarrow$ Cash register $\rightarrow$ Close & Count cash, enter it, check the difference, close. Bills are then locked \\
+Mark attendance & Manager & People $\rightarrow$ Attendance & Mark each person Present, Half day, Leave or Absent before the day ends \\
+Give an advance & Owner & People $\rightarrow$ employee $\rightarrow$ Give advance & Enter amount, reason, monthly deduction. The balance shows at once \\
+Pay salary & Owner / Accountant & People $\rightarrow$ Salary & Check the draft, approve, record how it was paid, share the payslip \\
+Create and track fall-pico & Cashier, Supervisor & POS, Fall-pico & Bill the saree, answer Yes to fall-pico, stick the printed tag, give to the supervisor to assign. When ready, the customer is told on WhatsApp \\
+Pay a fall-pico worker & Supervisor / Owner & Fall-pico $\rightarrow$ Workers & Check completed and approved jobs, record payment, any advance is deducted \\
+Receive new stock & Staff & Purchasing $\rightarrow$ New purchase & Enter the supplier bill, check quantities, print labels, stick labels \\
+Pack an online order & Online order staff & Orders & Print pick list, scan each item, wait for fall-pico if shown, pack, create courier shipment \\
+Check Tally problems & Accountant & Tally $\rightarrow$ Sync issues & Open each issue, fix the cause (for example a missing ledger), press Retry \\
+Make a festival poster & Manager & AI tools $\rightarrow$ Poster maker (Phase 2) & Type the offer, choose photos, check the text, download \\
+\end{longtable}
+}
+
+\subsection{Things to Remember}
+\begin{itemize}
+\item Never delete or change a khata entry. If something is wrong, make a correction entry with a reason.
+\item Always scan the barcode; do not type item names unless the label is missing.
+\item Check AI-written product text and posters before publishing.
+\item Do not share logins or PINs. Salary details are private.
+\item If the internet is off, keep billing. The POS will send bills later; do not make the same bill twice.
+\item Do not delete products that have past sales; mark them Inactive.
+\item Do not close Tally or the Tally server session. If Tally must be restarted, tell the accountant; entries wait safely and go through when it is open again.
+\end{itemize}
+
+\subsection{Frequently Asked Questions}
+\begin{description}
+\item[The POS shows Offline.] Keep billing. Check the sync number at the corner; it should reach 0 when the internet returns.
+\item[A customer did not get the WhatsApp bill.] Open the ledger entry and look at the status. Press Resend. If it still fails, the number may not be on WhatsApp; an SMS is sent instead.
+\item[Stock on the website is different from the shop.] Check the stock history for that item, then do a stock count and adjust with a reason.
+\item[How do I change the fall-pico price limit or the return days?] Settings $\rightarrow$ Rules (owner only).
+\item[How do I add a new staff member?] Settings $\rightarrow$ Users $\rightarrow$ Add, then choose a role.
+\end{description}
+
+\subsection{Support and Maintenance}
+\begin{longtable}{L{6cm}L{10.5cm}}
+\hdr Item & Detail \\ \endhead
+Support contact & TBD (phone, WhatsApp, email) \\
+Support hours & TBD \\
+Critical issue (billing down, wrong money) & Response within 2 hours \assump \\
+Normal issue & Within 1 working day \\
+New features & Through the Change Request process (section 15.3) \\
+\end{longtable}
+
+\subsection{Training Plan}
+\begin{longtable}{L{4cm}L{3.6cm}L{8.9cm}}
+\hdr Group & Time & Content \\ \endhead
+Cashiers & 1 hour + practice day & Cash bill, khata bill, payments, returns, offline mode, day close \\
+Manager and supervisor & 2 hours & Discounts, approvals, attendance, fall-pico board, QC \\
+Accountant & Half day & Tally sync, issues screen, reconciliation, GST, salary sheets \\
+Owner & 2 hours & Dashboard, approvals, ledgers, salary, reports \\
+Online order staff & 1 hour & Pick, pack, ship, returns \\
+\end{longtable}
+
+%% ---------------- 15 ----------------
+\section{Risks, Assumptions and Change Log}
+\subsection{Risks}
+{\small
+\begin{longtable}{L{0.9cm}L{3.8cm}L{2.2cm}L{1.8cm}L{5.2cm}L{2.6cm}}
+\hdr \# & Risk & Impact & Likelihood & Mitigation & Owner \\ \endhead
+R1 & Tally sync is harder than expected (version, locked periods, duplicates) & Wrong books, delay & High & Check in Sprint 0; test company; outbox with unique references; daily reconciliation & Integration \\
+R2 & WhatsApp template approval is slow or rejected & Bills cannot be sent & Medium & Submit in Week 1; keep SMS fallback; simple template wording & Integration \\
+R3 & Scope is too large for 5 people & Late launch & High & Phase plan; shop first, website last; AI after go-live; strict change control & PM \\
+R4 & Offline POS creates conflicts or duplicate bills & Wrong stock or money & Medium & Idempotency keys, per-counter series, conflict alerts, heavy offline testing & Frontend + Backend \\
+R5 & Wrong opening balances at migration & Customer disputes & Medium & Owner sign-off per balance; parallel run & PM + Owner \\
+R6 & Staff resist the new system & Low adoption & Medium & Real cashier in design tests, training, paper bill backup & PM \\
+R7 & PM, QA and design on one person & Quality gaps & High & Part-time designer; QA support from developers & PM \\
+R8 & AI writes a wrong amount or unsafe text & Trust and money & Low & Placeholders, validator, standard template fallback, zero-error test & AI \\
+R9 & Legal gaps (payroll rules, khata interest, WhatsApp opt-in) & Fines, complaints & Medium & CA and lawyer review before launch & Owner \\
+R10 & Hardware problems (printers, scanners) & Slow billing & Medium & Test chosen models in Sprint 1; keep spare scanner & PM \\
+R11 & Salary and khata data exposed & Privacy and trust & Low & Role checks, encryption, access logs & Backend \\
+R12 & WhatsApp and AI costs higher than planned & Budget & Medium & Cost tracking, monthly caps, alerts & AI + PM \\
+\end{longtable}
+}
+
+\textbf{Added risks (v1.0):}
+{\small
+\begin{longtable}{L{0.9cm}L{3.8cm}L{2.2cm}L{1.8cm}L{5.2cm}L{2.6cm}}
+\hdr \# & Risk & Impact & Likelihood & Mitigation & Owner \\ \endhead
+R13 & Counter billing in cloud Tally stops when the internet fails (Mode A) & Billing stops & Medium & Backup internet, paper bill book, move to the offline POS & PM + Owner \\
+R14 & Cloud Tally licence or hosting terms do not suit several users & Delay or extra cost & Medium & Check with the Tally vendor in Sprint 0 & Owner + Accountant \\
+R15 & Tally data quality (duplicate parties, missing phone numbers) breaks WhatsApp bills & Wrong or missing messages & Medium & Sample check in Sprint 0; clean up before messaging; Sync Issues screen & PM + Accountant \\
+R16 & Tally server down or Tally not open, agent cannot post & Sync delay & Medium & Queue, auto-start, alerts, daily reconciliation & Integration \\
+R17 & New bill number series is wrong under GST & Compliance & Low & Design with the accountant; test on staging; rehearse cutover & Accountant \\
+R18 & Plain React site is weak for SEO & Low organic traffic & Medium & Decide prerender or server rendering before the website sprint & Frontend \\
+\end{longtable}
+}
+
+\subsection{Key Assumptions}
+\begin{itemize}
+\item The open questions in SRS section 11 are answered by the end of Week 2.
+\item Tally runs on a cloud server in India that is on 24 hours (client decision; hosting and licence to confirm).
+\item The client supplies product data, opening balances, staff records and approvals on time.
+\item The accountant is available for Tally mapping, tests and the parallel run.
+\item Razorpay, WhatsApp provider, courier and AI vendor stay available at agreed prices.
+\end{itemize}
+
+\subsection{Change Request Process}
+\begin{enumerate}
+\item Client or team raises the request in writing.
+\item PM logs it below with the impact on time and cost, and the SRS requirements it touches.
+\item Client approves or rejects.
+\item If approved: update the SRS first, then this document, then the task board.
+\end{enumerate}
+
+\subsection{Change Request Log}
+{\small
+\begin{longtable}{L{1.6cm}L{1.8cm}L{2.4cm}L{3.8cm}L{2.6cm}L{1.9cm}L{2.4cm}}
+\hdr CR \# & Date & Requested by & Description & Impact (days / cost) & Decision & Docs updated \\ \endhead
+CR-001 & & & & & & \\
+CR-002 & & & & & & \\
+\end{longtable}
+}
+
+\subsection{Document Version History}
+\begin{longtable}{L{1.6cm}L{2.4cm}L{1.8cm}L{10.7cm}}
+\hdr Version & Date & Author & Changes \\ \endhead
+0.1 & 5 Oct 2026 & Draft & First draft based on a marketplace / SaaS idea \\
+0.2 & 5 Oct 2026 & Draft & Rewritten for the client's own business (shop + website, shared stock) to match SRS v0.2: POS, khata, WhatsApp bills, Tally, employees, fall-pico, purchasing; new architecture, database, API, sprint plan, tests and go-live \\
+1.0 & 5 Oct 2026 & Draft & Stack decided (FastAPI, React + Vite, PostgreSQL, Celery + Redis); Tally on a 24-hour cloud server with the agent on the same server; Mode A first and POS cutover later; new roadmap, milestones, sprint plan and rollout order; new bill number series; one counter; added tests T34 to T41 and risks R13 to R18; matches SRS v1.0 \\
+\end{longtable}
+
+\end{document}
