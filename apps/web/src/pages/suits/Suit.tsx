@@ -1,11 +1,11 @@
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-export default function Wishlist() {
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+export default function Suit() {
   return (
     <>
     <Header/>
         <main className="p-6 min-h-screen h-14 bg-linear-to-br from-background to-Alt_background">
-            <h1>This is WishList section</h1>
+            <h1>This is Suit section</h1>
         </main>
     <Footer/>
     </>
