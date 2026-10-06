@@ -1,11 +1,11 @@
-import { RouterProvider } from "react-router-dom";
-import { Providers } from "./providers";
-import { router } from "./router";
+import Home from "../../src/routes/storefront/StorefrontHome";
 
-export default function App() {
+function App() {
   return (
-    <Providers>
-      <RouterProvider router={router} />
-    </Providers>
+    <div>
+      <Home />
+    </div>
   );
 }
+
+export default App;
