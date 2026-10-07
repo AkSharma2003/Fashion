@@ -23,7 +23,7 @@ function Header() {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-lg">
+    <header className="bg-white font-primaryFont border-b border-gray-200 sticky top-0 z-50 shadow-lg">
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
 

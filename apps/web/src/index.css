@@ -1,7 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-
 @theme {
+
+  /* color */
   --color-primary: #5b2333;
   --color-secondary: #D4849A;
   --color-premium: #C9A66B;
@@ -14,4 +16,9 @@
   --color-premium: #C9A66B;
   --color-sale: #C0392B;
   --color-divider: #EADDE0;
+
+  /* font style */
+  --font-primaryFont: "Playfair Display", serif;
+  --font-SecondryFont: "Inter", sans-serif;
+  --font-SupportingFont: "Manrope", sans-serif;
 }
