@@ -7,6 +7,7 @@ from app.core.db import Base
 # Import every models module here so Alembic sees the tables.
 from app.core import audit, idempotency, outbox  # noqa: F401
 from app.modules.auth.models import Role, StaffUser  # noqa: F401
+from app.modules.customers.models import Customer # noqa: F401
 
 
 config = context.config
