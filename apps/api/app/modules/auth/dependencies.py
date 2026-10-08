@@ -59,3 +59,23 @@ def get_current_user(
         )
 
     return staff_user
+
+def require_role(*allowed_roll:str):
+    def rol_chaker(
+        current_user:StaffUser=Depends(get_current_user),
+    )-> StaffUser:
+        if current_user.role is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User roll is not Assigned"
+            )
+            
+        if current_user.role.name not in allowed_roll:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to access this resource"
+            )
+            
+        return current_user
+    
+    return rol_chaker

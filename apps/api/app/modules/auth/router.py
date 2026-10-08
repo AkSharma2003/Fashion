@@ -1,5 +1,5 @@
 from uuid import UUID
-
+from app.modules.auth.dependencies import get_current_user, require_role
 from fastapi import APIRouter,Depends,HTTPException,status
 from app.core.security import decode_access_token
 from sqlalchemy.orm import Session
@@ -169,3 +169,14 @@ def verify_otp(
         refresh_token=refresh_token,
         token_type="bearer",
     )
+    
+    
+@router.get("/owner-test")
+def owner_test(
+    current_user:StaffUser=Depends(require_role("Owner")),
+):
+    return {
+        "message":"Owner access granted",
+        "user":current_user.full_name,
+        "role":current_user.role.name,
+    }
