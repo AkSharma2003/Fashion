@@ -30,14 +30,18 @@ router = APIRouter(
 @router.post("/login",response_model=LoginResponse)
 def login(request:LoginRequest,db:Session=Depends(get_db)):
     auth_service=AuthService(db)
-    staff_user=auth_service.get_staff_user_by_phone_number(request.phone_number)
-
-    if staff_user is None or not staff_user.is_active:
+    
+    staff_user=auth_service.authenticate_staff_user(
+        phone_number=request.phone_number,
+        password=request.password,
+    )
+    
+    if staff_user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Phone number or password",
+            detail="Invailid Phone number or password"
         )
-        
+    
     access_token=auth_service.create_access_token(staff_user)
     refresh_token=auth_service.create_refresh_token(staff_user)
     
@@ -45,8 +49,9 @@ def login(request:LoginRequest,db:Session=Depends(get_db)):
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer",
-        is_active=staff_user.is_active
+        is_active=staff_user.is_active,
     )
+        
     
 @router.get("/me")
 def get_current_user_info(current_user:StaffUser=Depends(get_current_user)):
