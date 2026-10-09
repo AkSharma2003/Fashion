@@ -1,13 +1,10 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings:
+class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
-        env_file=(
-            "../../.env",
-            ".env"
-        ),
+        env_file=".env",
         extra="ignore"
     )
 
@@ -25,7 +22,7 @@ class Settings:
         "redis://localhost:6379/0"
     )
 
-    jwt_secret: str = "change-me"
+    jwt_secret: str
 
     paylink_secret: str = (
         "change-me-too"

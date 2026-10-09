@@ -12,4 +12,8 @@ def health() -> dict:
 
 
 for name, router in routers:
-    app.include_router(router, prefix=f"/api/v1/{name.replace('_', '-')}", tags=[name])
+    app.include_router(
+        router, 
+        prefix=f"/api/v1/{name.replace('_', '-')}", 
+        tags=[name]
+    )
