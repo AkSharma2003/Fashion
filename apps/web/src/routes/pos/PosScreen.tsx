@@ -1,3 +1,4 @@
+
 export default function PosScreen() {
   return (
     <main className="p-6">
