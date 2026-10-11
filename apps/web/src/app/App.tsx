@@ -17,7 +17,10 @@ import NewArrival from "../pages/newArrivls/NewArrival";
 import Cart from "../pages/Cart";
 import Wishlist from "../pages/WishList";
 import Login from "../pages/Login";
+import Signin from "../pages/Signin";
 import ProductsPage from "../pages/backoffice/ProductsPage";
+import Contact from "../pages/Contact";
+import SearchResults from "../pages/SearchResults";
 
 function App() {
   return (
@@ -31,6 +34,9 @@ function App() {
       <Route path="/cart" element={<Cart />} />
       <Route path="/wishlist" element={<Wishlist />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/signin" element={<Signin />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/search" element={<SearchResults />} />
 
       {/* Backoffice */}
       <Route path="/backoffice" element={<BackofficeLayout />}>

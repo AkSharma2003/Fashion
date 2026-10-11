@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Logo from "./Logo";
 import {
   ShoppingCart,
@@ -8,18 +8,38 @@ import {
   X,
   Search,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [menuOpen]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!search.trim()) return;
+    const query = search.trim();
+    if (!query) return;
 
-    console.log("Searching for:", search);
+    setMenuOpen(false);
+    navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
   return (
@@ -37,40 +57,41 @@ function Header() {
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-5 xl:gap-7 font-bold text-base xl:text-lg">
 
-            <Link
+            <NavLink
               to="/"
-              className="text-gray-700 hover:text-primary transition"
+              end
+              className={({ isActive }) => `relative text-gray-700 transition hover:text-primary ${isActive ? "text-primary after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:bg-primary" : ""}`}
             >
               Home
-            </Link>
+            </NavLink>
 
-            <Link
+            <NavLink
               to="/sarees"
-              className="text-gray-700 hover:text-primary transition"
+              className={({ isActive }) => `relative text-gray-700 transition hover:text-primary ${isActive ? "text-primary after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:bg-primary" : ""}`}
             >
               Sarees
-            </Link>
+            </NavLink>
 
-            <Link
+            <NavLink
               to="/suits"
-              className="text-gray-700 hover:text-primary transition"
+              className={({ isActive }) => `relative text-gray-700 transition hover:text-primary ${isActive ? "text-primary after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:bg-primary" : ""}`}
             >
               Suits
-            </Link>
+            </NavLink>
 
-            <Link
+            <NavLink
               to="/kids"
-              className="text-gray-700 hover:text-primary transition"
+              className={({ isActive }) => `relative text-gray-700 transition hover:text-primary ${isActive ? "text-primary after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:bg-primary" : ""}`}
             >
               Kids
-            </Link>
+            </NavLink>
 
-            <Link
+            <NavLink
               to="/new-arrivals"
-              className="text-gray-700 hover:text-primary transition whitespace-nowrap"
+              className={({ isActive }) => `relative whitespace-nowrap text-gray-700 transition hover:text-primary ${isActive ? "text-primary after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:bg-primary" : ""}`}
             >
               New Arrivals
-            </Link>
+            </NavLink>
 
           </nav>
 
@@ -81,13 +102,14 @@ function Header() {
           >
             <div className="relative w-full">
 
-              <Search
-                size={19}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              />
+              <button type="submit" aria-label="Search" className="absolute left-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition hover:text-primary">
+                <Search size={19} aria-hidden="true" />
+              </button>
 
               <input
                 type="text"
+                aria-label="Search products"
+                name="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search products..."
@@ -104,13 +126,14 @@ function Header() {
           >
             <div className="relative w-full">
 
-              <Search
-                size={16}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
-              />
+              <button type="submit" aria-label="Search" className="absolute left-0.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition hover:text-primary">
+                <Search size={16} aria-hidden="true" />
+              </button>
 
               <input
                 type="text"
+                aria-label="Search products"
+                name="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search..."
@@ -126,7 +149,8 @@ function Header() {
             {/* Wishlist */}
             <Link
               to="/wishlist"
-              className="text-gray-700 hover:text-primary transition"
+              aria-label="Wishlist"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-gray-700 transition hover:text-primary"
               title="Wishlist"
             >
               <Heart
@@ -138,7 +162,8 @@ function Header() {
             {/* Cart */}
             <Link
               to="/cart"
-              className="text-gray-700 hover:text-primary transition"
+              aria-label="Cart"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-gray-700 transition hover:text-primary"
               title="Cart"
             >
               <ShoppingCart
@@ -159,8 +184,11 @@ function Header() {
             {/* Mobile Menu */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="lg:hidden text-gray-700 hover:text-primary transition"
-              aria-label="Toggle menu"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-gray-700 transition duration-200 hover:scale-105 hover:bg-primary/10 hover:text-primary active:scale-95 lg:hidden"
+              aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-navigation"
+              type="button"
             >
               {menuOpen ? (
                 <X size={23} />
@@ -173,64 +201,62 @@ function Header() {
 
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile navigation drawer */}
         {menuOpen && (
-          <nav className="lg:hidden border-t border-gray-200 py-4">
+          <>
+            <button
+              type="button"
+              aria-label="Close navigation menu"
+              onClick={() => setMenuOpen(false)}
+              className="fixed inset-0 z-[60] bg-black/25 backdrop-blur-sm lg:hidden"
+            />
+            <nav
+              id="mobile-navigation"
+              aria-label="Mobile navigation"
+              className="fixed right-0 top-0 z-[61] flex h-dvh w-1/2 max-w-sm flex-col overflow-y-auto bg-white px-5 py-5 shadow-2xl lg:hidden"
+            >
+              <div className="mb-5 flex items-center justify-between border-b border-gray-200 pb-4">
+                <span className="text-lg font-bold text-gray-900">Menu</span>
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(false)}
+                  aria-label="Close navigation menu"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-gray-700 transition duration-200 hover:scale-105 hover:bg-primary/10 hover:text-primary active:scale-95"
+                >
+                  <X size={23} aria-hidden="true" />
+                </button>
+              </div>
 
-            <div className="flex flex-col gap-4 font-semibold text-lg">
-
-              <Link
-                to="/"
-                onClick={() => setMenuOpen(false)}
-                className="text-gray-700 hover:text-primary transition"
-              >
-                Home
-              </Link>
-
-              <Link
-                to="/sarees"
-                onClick={() => setMenuOpen(false)}
-                className="text-gray-700 hover:text-primary transition"
-              >
-                Sarees
-              </Link>
-
-              <Link
-                to="/suits"
-                onClick={() => setMenuOpen(false)}
-                className="text-gray-700 hover:text-primary transition"
-              >
-                Suits
-              </Link>
-
-              <Link
-                to="/kids"
-                onClick={() => setMenuOpen(false)}
-                className="text-gray-700 hover:text-primary transition"
-              >
-                Kids
-              </Link>
-
-              <Link
-                to="/new-arrivals"
-                onClick={() => setMenuOpen(false)}
-                className="text-gray-700 hover:text-primary transition"
-              >
-                New Arrivals
-              </Link>
-
-              <Link
-                to="/login"
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center justify-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg hover:bg-primary-dark transition"
-              >
-                <User size={18} />
-                Login
-              </Link>
-
-            </div>
-
-          </nav>
+              <div className="flex flex-col gap-2 font-semibold text-base sm:text-lg">
+                <NavLink to="/" end onClick={() => setMenuOpen(false)} className={({ isActive }) => `rounded-lg px-3 py-3 transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary active:bg-primary/15 ${isActive ? "border-l-2 border-primary bg-primary/10 text-primary" : "text-gray-700"}`}>
+                  Home
+                </NavLink>
+                <NavLink to="/sarees" onClick={() => setMenuOpen(false)} className={({ isActive }) => `rounded-lg px-3 py-3 transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary active:bg-primary/15 ${isActive ? "border-l-2 border-primary bg-primary/10 text-primary" : "text-gray-700"}`}>
+                  Sarees
+                </NavLink>
+                <NavLink to="/suits" onClick={() => setMenuOpen(false)} className={({ isActive }) => `rounded-lg px-3 py-3 transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary active:bg-primary/15 ${isActive ? "border-l-2 border-primary bg-primary/10 text-primary" : "text-gray-700"}`}>
+                  Suits
+                </NavLink>
+                <NavLink to="/kids" onClick={() => setMenuOpen(false)} className={({ isActive }) => `rounded-lg px-3 py-3 transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary active:bg-primary/15 ${isActive ? "border-l-2 border-primary bg-primary/10 text-primary" : "text-gray-700"}`}>
+                  Kids
+                </NavLink>
+                <NavLink to="/new-arrivals" onClick={() => setMenuOpen(false)} className={({ isActive }) => `rounded-lg px-3 py-3 transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary active:bg-primary/15 ${isActive ? "border-l-2 border-primary bg-primary/10 text-primary" : "text-gray-700"}`}>
+                  New Arrivals
+                </NavLink>
+                <Link to="/contact" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-gray-700 transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary active:bg-primary/15">
+                  Contact Us
+                </Link>
+                <Link
+                  to="/login"
+                  onClick={() => setMenuOpen(false)}
+                  className="mt-2 flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-white transition-all duration-200 hover:scale-[1.02] hover:bg-primary-dark active:scale-[0.98]"
+                >
+                  <User size={18} aria-hidden="true" />
+                  Login
+                </Link>
+              </div>
+            </nav>
+          </>
         )}
 
       </div>
