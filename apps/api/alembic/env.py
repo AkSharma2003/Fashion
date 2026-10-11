@@ -8,6 +8,9 @@ from app.core.db import Base
 from app.core import audit, idempotency, outbox  # noqa: F401
 from app.modules.auth.models import Role, StaffUser  # noqa: F401
 from app.modules.customers.models import Customer # noqa: F401
+from app.modules.khata.models import KhataAccount # noqa: F401
+from app.modules.catalog.models import Product  # noqa: F401
+from app.modules.inventory.models import Inventory  # noqa: F401
 
 
 config = context.config
