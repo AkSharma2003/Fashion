@@ -14,3 +14,6 @@
 7. apps/api/app/core/config.py
 
 8. apps/worker/app/tasks/tally_sync.py
+
+above file make by chat gpt
+
