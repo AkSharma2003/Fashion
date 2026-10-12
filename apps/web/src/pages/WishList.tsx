@@ -29,7 +29,7 @@ export default function Wishlist() {
               Your saved styles
             </p>
             <h1 className="mt-2 font-primaryFont text-3xl font-semibold text-main_text sm:text-4xl">
-              Wishlist
+              {"Wishlist"}
             </h1>
           </div>
 
@@ -41,8 +41,8 @@ export default function Wishlist() {
             </div>
           ) : (
             <div className="mx-auto max-w-lg rounded-2xl border border-divider bg-white px-6 py-12 text-center shadow-sm">
-              <p className="font-primaryFont text-xl font-semibold text-main_text">Your wishlist is empty</p>
-              <p className="mt-2 text-sm text-text">Tap the heart on a design to save it here.</p>
+              <p className="font-primaryFont text-xl font-semibold text-main_text">{"Your wishlist is empty"}</p>
+              <p className="mt-2 text-sm text-text">{"Tap the heart on a design to save it here."}</p>
               <Link
                 to="/"
                 className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 py-2.5 font-semibold text-white transition hover:bg-primary-dark"

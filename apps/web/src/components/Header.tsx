@@ -3,7 +3,6 @@ import Logo from "./Logo";
 import {
   ShoppingCart,
   Heart,
-  User,
   Menu,
   X,
   Search,
@@ -172,12 +171,7 @@ function Header() {
               />
             </Link>
 
-            {/* Login */}
-            <Link
-              to="/login"
-              className="hidden lg:flex items-center gap-2 bg-primary text-white px-4 xl:px-5 py-2 xl:py-2.5 rounded-lg hover:bg-primary-dark transition"
-            >
-              <User size={18} />
+            <Link to="/login" className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-primary/5 hover:text-primary sm:px-4">
               Login
             </Link>
 
@@ -251,7 +245,6 @@ function Header() {
                   onClick={() => setMenuOpen(false)}
                   className="mt-2 flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-white transition-all duration-200 hover:scale-[1.02] hover:bg-primary-dark active:scale-[0.98]"
                 >
-                  <User size={18} aria-hidden="true" />
                   Login
                 </Link>
               </div>

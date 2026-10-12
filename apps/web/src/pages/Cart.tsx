@@ -34,14 +34,14 @@ export default function Cart() {
       <main className="min-h-screen bg-linear-to-br from-background to-Alt_background px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <section className="mx-auto max-w-5xl">
           <div className="mb-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Your selection</p>
-            <h1 className="mt-2 font-primaryFont text-3xl font-semibold text-main_text sm:text-4xl">Shopping cart</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">{"Your selection"}</p>
+            <h1 className="mt-2 font-primaryFont text-3xl font-semibold text-main_text sm:text-4xl">{"Shopping cart"}</h1>
           </div>
 
           {items.length === 0 ? (
             <div className="rounded-2xl border border-divider bg-white px-6 py-12 text-center shadow-sm">
-              <p className="font-primaryFont text-xl font-semibold text-main_text">Your cart is empty</p>
-              <p className="mt-2 text-sm text-text">Explore the collection and add a style you love.</p>
+              <p className="font-primaryFont text-xl font-semibold text-main_text">{"Your cart is empty"}</p>
+              <p className="mt-2 text-sm text-text">{"Explore the collection and add a style you love."}</p>
               <Link to="/" className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 py-2.5 font-semibold text-white transition hover:bg-primary-dark">
                 Explore designs
               </Link>
@@ -69,7 +69,7 @@ export default function Cart() {
                         </div>
                         <button
                           type="button"
-                          onClick={() => removeFromCart(product.name)}
+                          onClick={() => removeFromCarproduct.name}
                           aria-label={`Remove ${product.name} from cart`}
                           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-red-50 hover:text-sale"
                         >

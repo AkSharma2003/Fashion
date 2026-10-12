@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Heart, ShoppingCart } from "lucide-react";
 import clothingFallback from "../assets/images/clothing-fallback.svg";
@@ -90,7 +90,7 @@ export default function Card({ product }: CardProps) {
       <div className="flex flex-1 flex-col p-2.5 sm:p-5">
         <div className="flex min-h-14 flex-col gap-0.5 sm:min-h-14 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
           <h2 className="line-clamp-2 min-h-9 min-w-0 break-words font-primaryFont text-sm font-semibold leading-4 text-main_text sm:min-h-14 sm:flex-1 sm:text-xl sm:leading-snug">
-            {product.name}
+          {product.name}
           </h2>
           <p className="shrink-0 whitespace-nowrap text-xs font-semibold leading-4 text-primary sm:pt-1 sm:text-base sm:leading-5">
             ₹{product.price.toLocaleString("en-IN")}
@@ -102,7 +102,7 @@ export default function Card({ product }: CardProps) {
         </p>
 
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-divider pt-2 sm:mt-4 sm:gap-3 sm:pt-4">
-          <span className="text-[9px] font-medium text-muted sm:text-xs">Colors</span>
+          <span className="text-[9px] font-medium text-muted sm:text-xs">{"Colors"}</span>
           <div className="flex items-center gap-1 sm:gap-2">
             {product.colors.map((color) => (
               <span
@@ -135,8 +135,8 @@ export default function Card({ product }: CardProps) {
             }}
             className="inline-flex min-h-9 min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-primary px-1 py-1.5 text-[10px] font-semibold text-surface transition hover:bg-primary-dark active:scale-[0.98] sm:min-h-11 sm:gap-2 sm:px-2 sm:py-2 sm:text-sm"
           >
-            <span className="sm:hidden">Buy</span>
-            <span className="hidden sm:inline">Buy now</span>
+            <span className="sm:hidden">{"Buy"}</span>
+            <span className="hidden sm:inline">{"Buy now"}</span>
             <ArrowRight size={14} aria-hidden="true" className="sm:h-4 sm:w-4" />
           </button>
         </div>

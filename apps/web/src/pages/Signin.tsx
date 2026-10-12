@@ -1,11 +1,37 @@
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { Link } from "react-router-dom";
-import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useState, type FormEvent } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { registerCustomer, saveCustomerSession } from "../lib/api/customerAuth";
 
 export default function Signin() {
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+
+    const formData = new FormData(event.currentTarget);
+    try {
+      const auth = await registerCustomer({
+        full_name: String(formData.get("name") ?? ""),
+        email: String(formData.get("email") ?? ""),
+        phone_number: String(formData.get("phone") ?? ""),
+        password: String(formData.get("password") ?? ""),
+      });
+      saveCustomerSession(auth);
+      navigate("/", { replace: true });
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Unable to create your account. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <>
@@ -14,18 +40,18 @@ export default function Signin() {
         <section className="w-full max-w-md rounded-xl border border-gray-100 bg-white p-5 shadow-xl sm:rounded-2xl sm:p-9">
           <div className="mb-6 text-center sm:mb-8">
             <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-primary">
-              Join WearVerse
+              {"Join WearVerse"}
             </p>
-            <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Create your account</h1>
+            <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{"Create your account"}</h1>
             <p className="mt-2 text-sm text-gray-600">
-              Create an account to save your favorites and orders.
+              {"Create an account to save your favorites and orders."}
             </p>
           </div>
 
-          <form className="space-y-5">
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="name" className="mb-2 block text-sm font-medium text-gray-700">
-                Full name
+                {"Full name"}
               </label>
               <input
                 id="name"
@@ -33,14 +59,14 @@ export default function Signin() {
                 type="text"
                 autoComplete="name"
                 required
-                placeholder="Your name"
+                placeholder={"Your name"}
                 className="min-h-12 w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <div>
               <label htmlFor="signup-email" className="mb-2 block text-sm font-medium text-gray-700">
-                Email address
+                {"Email address"}
               </label>
               <input
                 id="signup-email"
@@ -55,7 +81,7 @@ export default function Signin() {
 
             <div>
               <label htmlFor="signup-phone" className="mb-2 block text-sm font-medium text-gray-700">
-                Mobile number
+                {"Mobile number"}
               </label>
               <input
                 id="signup-phone"
@@ -64,7 +90,7 @@ export default function Signin() {
                 autoComplete="tel"
                 inputMode="tel"
                 required
-                placeholder="Enter your mobile number"
+                placeholder={"Enter your mobile number"}
                 className="min-h-12 w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
@@ -72,7 +98,7 @@ export default function Signin() {
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <label htmlFor="signup-password" className="text-sm font-medium text-gray-700">
-                  Password
+                  {"Password"}
                 </label>
                 <button
                   type="button"
@@ -92,23 +118,25 @@ export default function Signin() {
                 autoComplete="new-password"
                 minLength={8}
                 required
-                placeholder="At least 8 characters"
+                placeholder={"At least 8 characters"}
                 className="min-h-12 w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <button
               type="submit"
+              disabled={isSubmitting}
               className="min-h-12 w-full rounded-lg bg-primary px-4 py-3 font-semibold text-white transition hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
             >
-              Create account
+              {isSubmitting ? "Creating account..." : "Create account"}
             </button>
+            {error && <p className="text-sm text-sale" role="alert">{error}</p>}
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-600">
-            Already have an account?{" "}
+            {"Already have an account?"}{" "}
             <Link to="/login" className="font-semibold text-primary hover:underline">
-              Sign in
+              {"Sign in"}
             </Link>
           </p>
         </section>
