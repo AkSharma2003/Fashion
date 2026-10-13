@@ -10,7 +10,14 @@ from app.modules.auth.models import Role, StaffUser  # noqa: F401
 from app.modules.customers.models import Customer # noqa: F401
 from app.modules.khata.models import KhataAccount # noqa: F401
 from app.modules.catalog.models import Product  # noqa: F401
-from app.modules.inventory.models import Inventory  # noqa: F401
+from app.modules.inventory.models import (  # noqa: F401
+    ProductVariant,
+    Barcode,
+    StockLevel,
+    StockMovement,
+    StockCount,
+)
+from app.modules.catalog.models import Product, ProductImage
 
 
 config = context.config

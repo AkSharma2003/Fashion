@@ -1,11 +1,9 @@
-
-import { icons } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 
 const navigation = [
   { name: "Dashboard", path: "/backoffice", icon: "◫" },
   { name: "Orders", path: "/backoffice/orders", icon: "▤" },
-  { name: "Online Orders", path:"/Backoffice/online-orders"},
+  { name: "Online Orders", path: "/backoffice/online-orders", icon: "▤" },
   { name: "Products", path: "/backoffice/products", icon: "◇" },
   { name: "Inventory", path: "/backoffice/inventory", icon: "▦" },
   { name: "Customers", path: "/backoffice/customers", icon: "♙" },

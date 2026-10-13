@@ -1,0 +1,22 @@
+{
+    "sqltools.connections": [
+        {
+            "pgOptions": {
+                "statement_timeout": 30000,
+                "query_timeout": 30000,
+                "connectionTimeoutMillis": 5000
+            },
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "group": "root",
+            "name": "fashionos",
+            "database": "fashionos",
+            "username": "fashionos",
+            "password": "fashionos",
+            "connectionTimeout": 5000
+        }
+    ]
+}

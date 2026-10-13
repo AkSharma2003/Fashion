@@ -1,18 +1,5 @@
-import { useNavigate } from "react-router-dom";
-import { ImagePlay } from "lucide-react";
-import { useState } from "react";
 
-const navigation = [
-  { name: "Dashboard", icon: "◫" },
-  { name: "Orders", icon: "▤" },
-  { name: "Products", icon: "◇" },
-  { name: "Inventory", icon: "▦" },
-  { name: "Customers", icon: "♙" },
-  { name: "Khata", icon: "₹" },
-  { name: "Fall-Pico", icon: "✂" },
-  { name: "Reports", icon: "▥" },
-  { name: "Settings", icon: "⚙" },
-];
+import { useNavigate } from "react-router-dom";
 
 const stats = [
   {
@@ -78,18 +65,43 @@ const stockAlerts = [
   { name: "Kids Party Wear", detail: "SKU: KID-016", stock: 3 },
 ];
 
+const quickActions = [
+  {
+    title: "Manage Khata",
+    desc: "Customer balances and payments",
+    path: "/backoffice/khata",
+  },
+  {
+    title: "Add product",
+    desc: "Update your product catalogue",
+    path: "/backoffice/products",
+  },
+  {
+    title: "View customers",
+    desc: "Customer details and history",
+    path: null,
+  },
+  {
+    title: "Sales reports",
+    desc: "Review your store performance",
+    path: null,
+  },
+];
+
 export default function BackofficeDashboard() {
   const navigate = useNavigate();
-  const [activePage, setActivePage] = useState("Dashboard");
 
   return (
-    <div className="min-h-screen bg-[#F7F7F7] text-[#111111] md:flex">
-      {/* Main content */}
+    <div className="min-h-screen bg-[#F7F7F7] text-[#111111]">
       <main className="min-w-0 flex-1">
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 bg-white px-5 py-4 md:px-8">
           <div>
-            <p className="text-xs text-gray-500">Sethi Fashion / Workspace</p>
-            <h2 className="mt-1 text-xl font-semibold">{activePage}</h2>
+            <p className="text-xs text-gray-500">
+              Sethi Fashion / Workspace
+            </p>
+            <h2 className="mt-1 text-xl font-semibold">
+              Dashboard
+            </h2>
           </div>
 
           <div className="flex items-center gap-3">
@@ -106,7 +118,9 @@ export default function BackofficeDashboard() {
           {/* Welcome */}
           <section className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-sm text-gray-500">Friday, October 9, 2026</p>
+              <p className="text-sm text-gray-500">
+                Friday, October 9, 2026
+              </p>
               <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
                 Good morning, Ankit
               </h1>
@@ -115,7 +129,12 @@ export default function BackofficeDashboard() {
               </p>
             </div>
 
-            <button className="rounded-md bg-[#111111] px-5 py-3 text-sm font-medium text-white transition hover:bg-gray-800">
+            <button
+              onClick={() =>
+                alert("Create order feature abhi implement karna baaki hai.")
+              }
+              className="rounded-md bg-[#111111] px-5 py-3 text-sm font-medium text-white transition hover:bg-gray-800"
+            >
               + Create order
             </button>
           </section>
@@ -128,21 +147,28 @@ export default function BackofficeDashboard() {
                 className="rounded-lg border border-gray-200 bg-white p-5"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm text-gray-500">{stat.label}</p>
+                  <p className="text-sm text-gray-500">
+                    {stat.label}
+                  </p>
                   <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[#F2F2F2] text-lg">
                     {stat.icon}
                   </span>
                 </div>
+
                 <p className="mt-5 text-2xl font-semibold tracking-tight">
                   {stat.value}
                 </p>
-                <p className="mt-2 text-xs text-gray-500">{stat.note}</p>
+
+                <p className="mt-2 text-xs text-gray-500">
+                  {stat.note}
+                </p>
               </article>
             ))}
           </section>
 
           {/* Orders and stock */}
           <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+            {/* Recent orders */}
             <div className="overflow-hidden rounded-lg border border-gray-200 bg-white xl:col-span-2">
               <div className="flex items-center justify-between border-b border-gray-100 px-5 py-5">
                 <div>
@@ -151,8 +177,9 @@ export default function BackofficeDashboard() {
                     Latest store activity · Demo data
                   </p>
                 </div>
+
                 <button
-                  onClick={() => setActivePage("Orders")}
+                  onClick={() => navigate("/backoffice/online-orders")}
                   className="text-sm font-medium underline underline-offset-4"
                 >
                   View all
@@ -170,14 +197,19 @@ export default function BackofficeDashboard() {
                       <th className="px-5 py-3 font-medium">Status</th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {orders.map((order) => (
                       <tr
                         key={order.id}
                         className="border-t border-gray-100"
                       >
-                        <td className="px-5 py-4 font-medium">{order.id}</td>
-                        <td className="px-5 py-4">{order.customer}</td>
+                        <td className="px-5 py-4 font-medium">
+                          {order.id}
+                        </td>
+                        <td className="px-5 py-4">
+                          {order.customer}
+                        </td>
                         <td className="px-5 py-4 text-gray-600">
                           {order.item}
                         </td>
@@ -186,12 +218,13 @@ export default function BackofficeDashboard() {
                         </td>
                         <td className="px-5 py-4">
                           <span
-                            className={`inline-block rounded-full px-2.5 py-1 text-xs ${order.status === "Delivered"
+                            className={`inline-block rounded-full px-2.5 py-1 text-xs ${
+                              order.status === "Delivered"
                                 ? "bg-green-50 text-green-700"
                                 : order.status === "Processing"
                                   ? "bg-blue-50 text-blue-700"
                                   : "bg-amber-50 text-amber-700"
-                              }`}
+                            }`}
                           >
                             {order.status}
                           </span>
@@ -212,6 +245,7 @@ export default function BackofficeDashboard() {
                     {stockAlerts.length} items
                   </span>
                 </div>
+
                 <p className="mt-1 text-xs text-gray-500">
                   Products that need attention
                 </p>
@@ -224,11 +258,14 @@ export default function BackofficeDashboard() {
                     className="flex items-center justify-between gap-3 py-4"
                   >
                     <div>
-                      <p className="text-sm font-medium">{item.name}</p>
+                      <p className="text-sm font-medium">
+                        {item.name}
+                      </p>
                       <p className="mt-1 text-xs text-gray-500">
                         {item.detail}
                       </p>
                     </div>
+
                     <div className="shrink-0 text-right">
                       <p className="font-semibold">{item.stock}</p>
                       <p className="text-xs text-gray-500">left</p>
@@ -239,7 +276,9 @@ export default function BackofficeDashboard() {
 
               <div className="px-5 pb-5 pt-3">
                 <button
-                  onClick={() => setActivePage("Inventory")}
+                  onClick={() =>
+                    alert("Inventory page ka route App.tsx mein add karna baaki hai.")
+                  }
                   className="w-full rounded-md border border-gray-300 px-4 py-3 text-sm font-medium transition hover:bg-gray-50"
                 >
                   Manage inventory
@@ -251,36 +290,26 @@ export default function BackofficeDashboard() {
           {/* Quick actions */}
           <section>
             <h3 className="font-semibold">Quick actions</h3>
+
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {[
-                {
-                  title: "Manage Khata",
-                  desc: "Customer balances and payments",
-                  page: "Khata",
-                },
-                {
-                  title: "Add product",
-                  desc: "Update your product catalogue",
-                  page: "Products",
-                },
-                {
-                  title: "View customers",
-                  desc: "Customer details and history",
-                  page: "Customers",
-                },
-                {
-                  title: "Sales reports",
-                  desc: "Review your store performance",
-                  page: "Reports",
-                },
-              ].map((action) => (
+              {quickActions.map((action) => (
                 <button
                   key={action.title}
-                  onClick={() => setActivePage(action.page)}
+                  onClick={() => {
+                    if (action.path) {
+                      navigate(action.path);
+                    } else {
+                      alert(
+                        `${action.title} page ka route abhi configured nahi hai.`,
+                      );
+                    }
+                  }}
                   className="rounded-lg border border-gray-200 bg-white p-5 text-left transition hover:border-[#111111]"
                 >
                   <p className="font-medium">{action.title} ↗</p>
-                  <p className="mt-2 text-sm text-gray-500">{action.desc}</p>
+                  <p className="mt-2 text-sm text-gray-500">
+                    {action.desc}
+                  </p>
                 </button>
               ))}
             </div>
