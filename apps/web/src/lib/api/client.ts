@@ -53,3 +53,58 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   return payload as T;
 }
+
+
+/** Upload a product image using multipart/form-data. */
+export async function uploadProductImage<T>(
+  productId: string,
+  file: File,
+): Promise<T> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return api<T>(
+    `/catalog/${encodeURIComponent(productId)}/images`,
+    {
+      method: "POST",
+      body: formData,
+    },
+  );
+}
+
+
+export type ProductImage = {
+  id: string;
+  product_id: string;
+  object_key: string;
+  image_url: string | null;
+  original_filename: string;
+  content_type: string;
+  size_bytes: number;
+  created_at: string;
+};
+
+/** Fetch all images belonging to a product. */
+export async function getProductImages(
+  productId: string,
+): Promise<ProductImage[]> {
+  return api<ProductImage[]>(
+    `/catalog/${encodeURIComponent(productId)}/images`,
+  );
+}
+
+export type Product = {
+  id: string;
+  name: string;
+  description: string | null;
+  sku: string;
+  barcode: string | null;
+  category: string;
+  selling_price_paise: number;
+  is_active: boolean;
+};
+
+/** Fetch active products from the backend. */
+export async function getProducts(): Promise<Product[]> {
+  return api<Product[]>("/catalog/");
+}

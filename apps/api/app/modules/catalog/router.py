@@ -204,7 +204,6 @@ def get_product_image_or_404(
 
 
 
-
 @router.post(
     "/{product_id}/images",
     status_code=status.HTTP_201_CREATED,
@@ -217,6 +216,7 @@ def upload_product_image_endpoint(
     product = db.get(Product, product_id)
 
     if product is None:
+        file.file.close()
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Product not found.",
@@ -244,6 +244,29 @@ def upload_product_image_endpoint(
         db.commit()
         db.refresh(image)
 
+    except ValueError as exc:
+        db.rollback()
+
+        if result is not None:
+            try:
+                delete_product_image(result["object_key"])
+            except Exception:
+                pass
+
+        message = str(exc)
+
+        if "exceeds the" in message:
+            status_code = status.HTTP_413_CONTENT_TOO_LARGE
+        elif "Unsupported image type" in message:
+            status_code = status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+        else:
+            status_code = status.HTTP_400_BAD_REQUEST
+
+        raise HTTPException(
+            status_code=status_code,
+            detail=message,
+        ) from exc
+
     except Exception as exc:
         db.rollback()
 
@@ -259,7 +282,6 @@ def upload_product_image_endpoint(
         ) from exc
 
     return image_response(image)
-
 
 
 
