@@ -4,18 +4,11 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import Card, { type ClothingCardProduct } from "../../components/Card";
 import clothingFallback from "../../assets/images/clothing-fallback.svg";
-import { getProducts } from "../../lib/api/client";
-
-type ApiProduct = {
-  id: string;
-  name: string;
-  description: string | null;
-  sku: string;
-  barcode: string | null;
-  category: string;
-  selling_price_paise: number;
-  is_active: boolean;
-};
+import {
+  getProducts,
+  getProductImages,
+  type Product,
+} from "../../lib/api/client";
 
 export default function StorefrontHome() {
   const [products, setProducts] = useState<ClothingCardProduct[]>([]);
@@ -30,20 +23,42 @@ export default function StorefrontHome() {
         setLoading(true);
         setError("");
 
-        const response = await getProducts();
-        const apiProducts = response as ApiProduct[];
+        const apiProducts = await getProducts();
 
-        const mappedProducts: ClothingCardProduct[] = apiProducts
-          .filter((product) => product.is_active)
-          .map((product) => ({
-            name: product.name,
-            description: product.description ?? product.category,
-            price: product.selling_price_paise / 100,
-            image: clothingFallback,
-            imageAlt: product.name,
-            colors: [],
-            tag: product.category,
-          }));
+        const activeProducts = apiProducts.filter(
+          (product: Product) => product.is_active
+        );
+
+        const mappedProducts = await Promise.all(
+          activeProducts.map(async (product: Product) => {
+            let image = clothingFallback;
+
+            try {
+              const images = await getProductImages(product.id);
+              const firstImage = images[0];
+
+              if (firstImage?.image_url) {
+                image = firstImage.image_url.startsWith("http")
+                  ? firstImage.image_url
+                  : `${(
+                      import.meta.env.VITE_API_URL ?? ""
+                    ).replace(/\/$/, "")}${firstImage.image_url.startsWith("/") ? "" : "/"}${firstImage.image_url}`;
+              }
+            } catch {
+              // If image loading fails, keep the fallback image.
+            }
+
+            return {
+              name: product.name,
+              description: product.description ?? product.category,
+              price: product.selling_price_paise / 100,
+              image,
+              imageAlt: product.name,
+              colors: [],
+              tag: product.category,
+            } satisfies ClothingCardProduct;
+          })
+        );
 
         if (!cancelled) {
           setProducts(mappedProducts);
@@ -53,7 +68,7 @@ export default function StorefrontHome() {
           setError(
             err instanceof Error
               ? err.message
-              : "Products load nahi ho paaye."
+              : "Unable to load products."
           );
         }
       } finally {
@@ -78,19 +93,19 @@ export default function StorefrontHome() {
         <section className="mx-auto max-w-7xl">
           {loading && (
             <p className="py-10 text-center text-text">
-              Products load ho rahe hain...
+              Loading products...
             </p>
           )}
 
           {!loading && error && (
             <p className="py-10 text-center text-red-600">
-              Products load nahi hue: {error}
+              Unable to load products: {error}
             </p>
           )}
 
           {!loading && !error && products.length === 0 && (
             <p className="py-10 text-center text-text">
-              Abhi koi product available nahi hai.
+              No products are available yet.
             </p>
           )}
 
