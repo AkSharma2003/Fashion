@@ -2,7 +2,15 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Integer, String, Uuid, func
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Uuid,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -22,7 +30,7 @@ class Product(Base):
         nullable=False,
         index=True,
     )
-    
+
     description: Mapped[str | None] = mapped_column(
         String(2000),
         nullable=True,
@@ -71,3 +79,48 @@ class Product(Base):
         onupdate=func.now(),
         nullable=False,
     )
+
+
+class ProductImage(Base):
+    __tablename__ = "product_images"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid,
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    object_key: Mapped[str] = mapped_column(
+        String(500),
+        unique=True,
+        nullable=False,
+    )
+
+    original_filename: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
+    content_type: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
+
+    size_bytes: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+

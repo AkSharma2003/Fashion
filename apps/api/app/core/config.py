@@ -34,6 +34,16 @@ class Settings(BaseSettings):
 
     # Tally Bridge authentication
     tally_agent_api_key: str = ""
-
+    
+    
+    # Cloudflare R2 image storage
+    image_storage_provider: str = "r2"
+    image_storage_bucket: str = "fashionos-product-images"
+    image_storage_endpoint: str = ""
+    image_storage_region: str = "auto"
+    image_storage_access_key: str = ""
+    image_storage_secret_key: str = ""
+    image_storage_public_base_url: str = ""
+    image_storage_max_file_size_mb: int = 5
 
 settings = Settings()
