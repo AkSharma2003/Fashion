@@ -19,7 +19,11 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getAccessToken();
   const headers = new Headers(init.headers);
 
-  if (!headers.has("Content-Type") && init.body !== undefined) {
+  if (
+    !(init.body instanceof FormData) &&
+    !headers.has("Content-Type") &&
+    init.body !== undefined
+  ) {
     headers.set("Content-Type", "application/json");
   }
   if (token && !headers.has("Authorization")) {
@@ -107,4 +111,48 @@ export type Product = {
 /** Fetch active products from the backend. */
 export async function getProducts(): Promise<Product[]> {
   return api<Product[]>("/catalog/");
+}
+
+
+export type ProductCreateInput = {
+  name: string;
+  description?: string | null;
+  sku: string;
+  barcode?: string | null;
+  category: string;
+  selling_price_paise: number;
+};
+
+export type ProductUpdateInput = Partial<ProductCreateInput> & {
+  is_active?: boolean;
+};
+
+/** Create a product. */
+export async function createProduct(
+  input: ProductCreateInput,
+): Promise<Product> {
+  return api<Product>("/catalog/", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+/** Update selected product fields. */
+export async function updateProduct(
+  productId: string,
+  input: ProductUpdateInput,
+): Promise<Product> {
+  return api<Product>(`/catalog/${encodeURIComponent(productId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+/** Deactivate a product instead of permanently deleting it. */
+export async function deleteProduct(
+  productId: string,
+): Promise<Product> {
+  return api<Product>(`/catalog/${encodeURIComponent(productId)}`, {
+    method: "DELETE",
+  });
 }
