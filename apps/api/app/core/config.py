@@ -45,5 +45,9 @@ class Settings(BaseSettings):
     image_storage_secret_key: str = ""
     image_storage_public_base_url: str = ""
     image_storage_max_file_size_mb: int = 5
+    
+    # 2factor.in massege
+    twofactor_api_key: str = ""
+    customer_otp_test_mode: bool = False
 
 settings = Settings()
