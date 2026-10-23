@@ -1,5 +1,6 @@
 from uuid import UUID
 from pydantic import BaseModel,Field
+from pydantic import BaseModel, Field, EmailStr
 
 class CustomerCreate(BaseModel):
     full_name:str=Field(...,min_length=2,max_length=100)

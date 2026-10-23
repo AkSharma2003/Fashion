@@ -98,3 +98,4 @@ class CustomerService:
             raise ValueError("Customer is already inactive.")
 
         return self.customer_repo.soft_delete_customer(customer)
+
