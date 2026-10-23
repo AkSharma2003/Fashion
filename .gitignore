@@ -1,0 +1,59 @@
+
+# Dependencies
+node_modules/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Testing and coverage
+coverage/
+
+# Cache
+.cache/
+.vite/
+.eslintcache
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
+# IDE and editor
+.vscode/
+.idea/
+.DS_Store
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+
+# Deployment
+.vercel/
+
+# Secrets and certificates
+*.pem
+*.key

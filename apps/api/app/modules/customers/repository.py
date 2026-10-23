@@ -18,6 +18,37 @@ class CustomerRepository:
         )
         return self.db.scalar(stmt)
     
+    
+    def get_customer_by_email(self, email: str) -> Customer | None:
+        stmt = select(Customer).where(
+            Customer.email == email.lower()
+        )
+        return self.db.scalar(stmt)
+
+    def create_website_customer(
+        self,
+        full_name: str,
+        phone_number: str,
+        email: str,
+        password_hash: str,
+        profile_photo_url: str | None = None,
+    ) -> Customer:
+        customer = Customer(
+            full_name=full_name,
+            phone_number=phone_number,
+            email=email.lower(),
+            password_hash=password_hash,
+            profile_photo_url=profile_photo_url,
+            is_verified=False,
+            is_active=True,
+        )
+
+        self.db.add(customer)
+        self.db.flush()
+
+        return customer
+
+    
     def list_active_customers(self) -> list[Customer]:
         stmt=(
             select(Customer)

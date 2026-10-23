@@ -15,6 +15,16 @@ from app.modules.customers.schemas import(
 
 from app.modules.customers.service import CustomerService
 
+from app.modules.customers.schemas import (
+    WebsiteCustomerRegister,
+    WebsiteCustomerVerifyOTP,
+    WebsiteCustomerRegisterResponse,
+    WebsiteCustomerProfileResponse,
+)
+from app.modules.customers.website_registration_service import (
+    WebsiteRegistrationService,
+)
+
 router=APIRouter(
     prefix="/customers",
     tags=["customers"],
@@ -150,3 +160,68 @@ def delete_customer(
             detail=str(e)
         )
     
+
+@router.post(
+    "/website/register",
+    response_model=WebsiteCustomerRegisterResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def website_register(
+    request: WebsiteCustomerRegister,
+    db: Session = Depends(get_db),
+):
+    service = WebsiteRegistrationService(db)
+
+    try:
+        return await service.register(
+            full_name=request.full_name,
+            email=str(request.email),
+            phone_number=request.phone_number,
+            password=request.password,
+            profile_photo_url=request.profile_photo_url,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e),
+        )
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Registration delivery is temporarily unavailable.",
+        ) from e
+
+
+@router.post(
+    "/website/verify-otp",
+    response_model=WebsiteCustomerProfileResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def website_verify_otp(
+    request: WebsiteCustomerVerifyOTP,
+    db: Session = Depends(get_db),
+):
+    service = WebsiteRegistrationService(db)
+
+    try:
+        return service.verify(
+            email=str(request.email),
+            otp=request.otp,
+        )
+    except ValueError as e:
+        message = str(e)
+
+        if message == "Email or phone number is already registered.":
+            error_status = status.HTTP_409_CONFLICT
+        else:
+            error_status = status.HTTP_400_BAD_REQUEST
+
+        raise HTTPException(
+            status_code=error_status,
+            detail=message,
+        )
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="OTP verification is temporarily unavailable.",
+        ) from e

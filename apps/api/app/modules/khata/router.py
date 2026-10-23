@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.modules.auth.models import StaffUser
-from app.modules.auth.dependencies import get_current_user
+from app.modules.auth.dependencies import get_current_user, require_role
 
 from app.modules.khata.schemas import (
     KhataAccountCreate,
@@ -13,7 +13,6 @@ from app.modules.khata.schemas import (
 from app.modules.khata.service import KhataService
 
 router = APIRouter(
-    prefix="/khata",
     tags=["khata"]
 )
 
@@ -26,7 +25,7 @@ router = APIRouter(
 def create_khata_account(
     request:KhataAccountCreate,
     db:Session=Depends(get_db),
-    current_user:StaffUser=Depends(get_current_user)    
+    current_user: StaffUser = Depends(require_role("Owner", "Manager"))
 ):
     service=KhataService(db)
     
@@ -48,13 +47,13 @@ def create_khata_account(
     return khata
 
 @router.get(
-    "/account{khata_id}",
+    "/account/{khata_id}",
     response_model=KhataAccountResponse
 )
 def get_khata_account(
     khata_id:UUID,
     db:Session=Depends(get_db),
-    current_user:StaffUser=Depends(get_current_user)
+    current_user: StaffUser = Depends(require_role("Owner", "Manager"))
 ):
     service=KhataService(db)
     khata=service.get_by_id(khata_id)
@@ -74,7 +73,7 @@ def get_khata_account(
 def get_customer_khata(
     customer_id:UUID,
     db:Session=Depends(get_db),
-    current_user:StaffUser=Depends(get_current_user)
+    current_user: StaffUser = Depends(require_role("Owner", "Manager"))
 ):
     service=KhataService(db)
     khata=service.get_by_customer_id(customer_id)
@@ -94,7 +93,7 @@ def get_customer_khata(
 def deactivate_khata_account(
     khata_id:UUID,
     db:Session=Depends(get_db),
-    current_user:StaffUser=Depends(get_current_user)
+    current_user: StaffUser = Depends(require_role("Owner", "Manager"))
 ):
     service=KhataService(db)
     
@@ -118,3 +117,35 @@ def deactivate_khata_account(
             detail=str(e)
         )
         
+        
+
+@router.patch(
+    "/account/{khata_id}/activate",
+    response_model=KhataAccountResponse
+)
+def activate_khata_account(
+    khata_id:UUID,
+    db:Session=Depends(get_db),
+    current_user:StaffUser=Depends(require_role("Owner", "Manager"))
+):
+    service=KhataService(db)
+    
+    try:
+        khata=service.activate(khata_id)
+        db.commit()
+        db.refresh(khata)
+        return khata
+        
+    except ValueError as e:
+        db.rollback()
+        
+        if str(e)=="Khata account not found.":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e),
+            )
+            
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e)
+        )
