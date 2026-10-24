@@ -57,6 +57,7 @@ class StaffUserResponse(BaseModel):
     id: UUID
     full_name: str
     phone_number: str
+    email: str | None = None
     role_id: UUID
     is_active: bool
 

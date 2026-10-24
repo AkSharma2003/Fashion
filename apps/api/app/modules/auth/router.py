@@ -114,69 +114,93 @@ def refresh_token(
         token_type="bearer"
     )
     
-    
-@router.post("/otp/send",response_model=OTPSendResponse)
-def send_otp(request: OTPSendRequest, db: Session = Depends(get_db)):
-    auth_service = AuthService(db)
-    otp = auth_service.send_otp(request.phone_number)
-    
-    return OTPSendResponse(
-        message=f"OTP sent to {request.phone_number} for testing. OTP: {otp}"
-    )
-    
-@router.post("/otp/verify",response_model=OTPVerifyResponse)
-def verify_otp(
-    request:OTPVerifyRequest,
-    db:Session= Depends(get_db),
+@router.post("/otp/send", response_model=OTPSendResponse)
+async def send_otp(
+    request: OTPSendRequest,
+    db: Session = Depends(get_db),
 ):
-    auth_service=AuthService(db)
-    
+    auth_service = AuthService(db)
+
     try:
-        staff_user=auth_service.verify_otp(
+        await auth_service.send_otp(request.phone_number)
+
+    except ValueError as exc:
+        if str(exc) == "ACCOUNT_NOT_FOUND":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Account not found",
+            )
+
+        if str(exc) == "ACCOUNT_INACTIVE":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account is inactive",
+            )
+
+        if str(exc) == "EMAIL_NOT_CONFIGURED":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email is not configured for this account",
+            )
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unable to send OTP",
+        ) from exc
+
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="OTP delivery is temporarily unavailable",
+        ) from exc
+
+    return OTPSendResponse(
+        message="If delivery is successful, your OTP has been sent to your registered email and phone."
+    )
+
+
+@router.post("/otp/verify", response_model=OTPVerifyResponse)
+def verify_otp(
+    request: OTPVerifyRequest,
+    db: Session = Depends(get_db),
+):
+    auth_service = AuthService(db)
+
+    try:
+        staff_user = auth_service.verify_otp(
             phone_number=request.phone_number,
             otp=request.otp,
         )
-        
-    except ValueError as e:
-        if str(e) == "INVALID_OTP":
+
+    except ValueError as exc:
+        if str(exc) == "INVALID_OTP":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired OTP",
-            )
-        
-        if str(e) == "ACCOUNT_NOT_FOUND":
+            ) from exc
+
+        if str(exc) == "ACCOUNT_NOT_FOUND":
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Account not found, Your Phone number is not registred",
-            )
-            
-        if str(e) == "ACCOUNT_INACTIVE":
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Your Account is not Active"
-                )
-                
+                detail="Account not found",
+            ) from exc
+
+        if str(exc) == "ACCOUNT_INACTIVE":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account is inactive",
+            ) from exc
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Authentication failed"
-        )
-        
-    access_token=auth_service.create_access_token(staff_user)
-    refresh_token=auth_service.create_refresh_token(staff_user)
-    
+            detail="Authentication failed",
+        ) from exc
+
+    access_token = auth_service.create_access_token(staff_user)
+    refresh_token = auth_service.create_refresh_token(staff_user)
+
     return OTPVerifyResponse(
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer",
     )
-    
-    
-@router.get("/owner-test")
-def owner_test(
-    current_user:StaffUser=Depends(require_role("Owner")),
-):
-    return {
-        "message":"Owner access granted",
-        "user":current_user.full_name,
-        "role":current_user.role.name,
-    }
