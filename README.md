@@ -3,10 +3,7 @@
 
 ### Group Details
 
-- **Group Number:** 11
-### Group Details
-
-- **Group Number:** 11
+- **Group Number:** 36
 
 | S. No. | Name                        | Enrollment Number   |
 |--------|-----------------------------|---------------------|
