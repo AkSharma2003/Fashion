@@ -15,6 +15,7 @@ export type ClothingCardColor = {
 };
 
 export type ClothingCardProduct = {
+  id?: string;
   name: string;
   description: string;
   price: number;
@@ -30,6 +31,11 @@ type CardProps = {
 
 export default function Card({ product }: CardProps) {
   const navigate = useNavigate();
+  const openProductDetails = () => {
+    if (product.id) {
+      navigate(`/product/${encodeURIComponent(product.id)}`);
+    }
+  };
   const [isWishlisted, setIsWishlisted] = useState(() =>
     getWishlist().some((item) => item.name === product.name)
   );
@@ -59,8 +65,13 @@ export default function Card({ product }: CardProps) {
 
   return (
     <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-divider bg-surface text-main_text shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:rounded-2xl">
-      <div className="relative aspect-[4/5] overflow-hidden bg-Alt_background">
+      <div
+        className={`relative aspect-[4/5] overflow-hidden bg-Alt_background ${product.id ? "cursor-pointer" : ""
+          }`}
+        onClick={openProductDetails}
+      >
         <img
+          onClick={openProductDetails}
           src={product.image}
           alt={product.imageAlt}
           loading="lazy"
@@ -90,7 +101,17 @@ export default function Card({ product }: CardProps) {
       <div className="flex flex-1 flex-col p-2.5 sm:p-5">
         <div className="flex min-h-14 flex-col gap-0.5 sm:min-h-14 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
           <h2 className="line-clamp-2 min-h-9 min-w-0 break-words font-primaryFont text-sm font-semibold leading-4 text-main_text sm:min-h-14 sm:flex-1 sm:text-xl sm:leading-snug">
-            {product.name}
+            {product.id ? (
+              <button
+                type="button"
+                onClick={openProductDetails}
+                className="text-left hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {product.name}
+              </button>
+            ) : (
+              product.name
+            )}
           </h2>
           <p className="shrink-0 whitespace-nowrap text-xs font-semibold leading-4 text-primary sm:pt-1 sm:text-base sm:leading-5">
             ₹{product.price.toLocaleString("en-IN")}

@@ -156,3 +156,83 @@ export async function deleteProduct(
     method: "DELETE",
   });
 }
+
+export type ProductVariant = {
+  id: string;
+  product_id: string;
+  size: string;
+  color: string;
+  sku: string;
+  selling_price_paise: number;
+  stock_quantity: number;
+  is_active: boolean;
+};
+
+/** Fetch active variants belonging to a product. */
+export async function getProductVariants(
+  productId: string,
+): Promise<ProductVariant[]> {
+  return api<ProductVariant[]>(
+    `/catalog/${encodeURIComponent(productId)}/variants`,
+  );
+}
+
+
+export type ProductVariantCreateInput = {
+  size: string;
+  color: string;
+  sku: string;
+  selling_price_paise: number;
+  stock_quantity: number;
+};
+
+export type ProductVariantUpdateInput = {
+  size?: string;
+  color?: string;
+  sku?: string;
+  selling_price_paise?: number;
+  stock_quantity?: number;
+  is_active?: boolean;
+};
+
+/** Create a variant for a product. */
+export async function createProductVariant(
+  productId: string,
+  input: ProductVariantCreateInput,
+): Promise<ProductVariant> {
+  return api<ProductVariant>(
+    `/catalog/${encodeURIComponent(productId)}/variants`,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+/** Update an existing product variant. */
+export async function updateProductVariant(
+  productId: string,
+  variantId: string,
+  input: ProductVariantUpdateInput,
+): Promise<ProductVariant> {
+  return api<ProductVariant>(
+    `/catalog/${encodeURIComponent(productId)}/variants/${encodeURIComponent(variantId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+/** Deactivate an existing product variant. */
+export async function deactivateProductVariant(
+  productId: string,
+  variantId: string,
+): Promise<ProductVariant> {
+  return api<ProductVariant>(
+    `/catalog/${encodeURIComponent(productId)}/variants/${encodeURIComponent(variantId)}`,
+    {
+      method: "DELETE",
+    },
+  );
+}

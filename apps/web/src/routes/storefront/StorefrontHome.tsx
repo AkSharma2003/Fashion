@@ -24,7 +24,6 @@ export default function StorefrontHome() {
         setError("");
 
         const apiProducts = await getProducts();
-
         const activeProducts = apiProducts.filter(
           (product: Product) => product.is_active
         );
@@ -40,15 +39,19 @@ export default function StorefrontHome() {
               if (firstImage?.image_url) {
                 image = firstImage.image_url.startsWith("http")
                   ? firstImage.image_url
-                  : `${(
-                      import.meta.env.VITE_API_URL ?? ""
-                    ).replace(/\/$/, "")}${firstImage.image_url.startsWith("/") ? "" : "/"}${firstImage.image_url}`;
+                  : `${(import.meta.env.VITE_API_URL ?? "").replace(
+                      /\/$/,
+                      ""
+                    )}${firstImage.image_url.startsWith("/") ? "" : "/"}${
+                      firstImage.image_url
+                    }`;
               }
             } catch {
-              // If image loading fails, keep the fallback image.
+              // Keep the fallback image if image loading fails.
             }
 
             return {
+              id: product.id,
               name: product.name,
               description: product.description ?? product.category,
               price: product.selling_price_paise / 100,
@@ -112,7 +115,10 @@ export default function StorefrontHome() {
           {!loading && !error && products.length > 0 && (
             <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:gap-6 lg:grid-cols-4">
               {products.map((product) => (
-                <Card key={product.name} product={product} />
+                <Card
+                  key={product.id ?? product.name}
+                  product={product}
+                />
               ))}
             </div>
           )}
