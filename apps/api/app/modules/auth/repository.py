@@ -108,10 +108,12 @@ class StaffUserRepository:
         role_id: UUID,
         password_hash: str | None = None,
         pin_hash: str | None = None,
+        email: str | None = None,
     ) -> StaffUser:
         staff_user = StaffUser(
             full_name=full_name,
             phone_number=phone_number,
+            email=email,
             password_hash=password_hash,
             pin_hash=pin_hash,
             role_id=role_id,

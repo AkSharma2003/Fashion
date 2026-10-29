@@ -21,6 +21,7 @@ import Signin from "../pages/Signin";
 import ProductsPage from "../pages/backoffice/ProductsPage";
 import Contact from "../pages/Contact";
 import SearchResults from "../pages/SearchResults";
+import ProductDetails from "../pages/ProductDetails";
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
       <Route path="/signin" element={<Signin />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/search" element={<SearchResults />} />
+      <Route path="/product/:productId" element={<ProductDetails />} />
 
       {/* Backoffice */}
       <Route path="/backoffice" element={<BackofficeLayout />}>

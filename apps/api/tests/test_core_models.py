@@ -10,9 +10,12 @@ from app.core.db import Base
 @pytest.fixture()
 def db():
     engine = create_engine("sqlite://")
-    Base.metadata.create_all(engine)
-    with Session(engine) as session:
-        yield session
+    try:
+        Base.metadata.create_all(engine)
+        with Session(engine) as session:
+            yield session
+    finally:
+        engine.dispose()
 
 
 def test_outbox_reference_is_unique(db):
