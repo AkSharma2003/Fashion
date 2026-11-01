@@ -1,0 +1,2014 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{textcomp}
+\usepackage[a4paper,margin=1in,headheight=15pt]{geometry}
+\emergencystretch=3em
+\usepackage{graphicx}
+\usepackage{longtable,booktabs,array,calc}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage[expansion=false]{microtype}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue,citecolor=black}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt plus 1pt minus 1pt}
+\setcounter{secnumdepth}{0}
+\setcounter{tocdepth}{2}
+\renewcommand{\arraystretch}{1.18}
+\setlength{\LTpre}{6pt}
+\setlength{\LTpost}{6pt}
+\providecommand{\tightlist}{\setlength{\itemsep}{2pt}\setlength{\parskip}{0pt}}
+\providecommand{\real}[1]{#1}
+\begin{document}
+\sloppy
+\thispagestyle{fancy}
+\begin{center}
+\vspace*{0.05cm}
+{\Large\bfseries INDIAN INSTITUTE OF INFORMATION TECHNOLOGY\par}
+\vspace{0.05cm}
+{\Large\bfseries VADODARA\par}
+\vspace{0.25cm}
+\includegraphics[width=1.1in,height=1.1in]{media/media/image1.png}\par
+\vspace{0.25cm}
+{\Large\bfseries CS545\par}
+\vspace{0.06cm}
+{\Large\bfseries SOFTWARE ENGINEERING\par}
+\vspace{0.06cm}
+{\LARGE\bfseries PROJECT REPORT\par}
+\vspace{0.2cm}
+{\large Master of Computer Applications (MCA)\par}
+{\large Second Year\par}
+\vspace{0.2cm}
+{\large\bfseries Project Title:\par}
+\vspace{0.12cm}
+{\large\bfseries Wereverse: Unified Retail Management System for Shop Billing, Khata, WhatsApp Bills,\par}
+{\large\bfseries Tally Integration, Payroll and Saree Fall-Pico\par}
+\vspace{0.15cm}
+{\large\bfseries Group No. 36\par}
+\vspace{0.15cm}
+{\large\bfseries Submitted By:\par}
+\vspace{0.08cm}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{c l c}
+\textbf{S. No.} & \textbf{Name} & \textbf{Enrollment ID}\\
+1 & Ankit Kumar Sharma & 20252651007\\
+2 & Piyush Lalchand Menghani & 20252651039\\
+3 & Shubham Gupta & 20252651021\\
+4 & Vijay Singh & 20252651064\\
+5 & Vivek Kumar Kosta & 20252651065\\
+\end{tabular}
+\vspace{0.15cm}
+
+{\large\bfseries Submitted To:\par}
+\vspace{0.04cm}
+Faculty Name: Rishabh Gupta\par
+Department: MCA\par
+\vspace{0.12cm}
+{\large\bfseries Indian Institute of Information Technology\par}
+{\large\bfseries Vadodara Autumn 2026-27\par}
+\end{center}
+\clearpage
+\section*{CERTIFICATE}\label{certificate}
+
+This is to certify that the following students of the \textbf{Master of
+Computer Applications (MCA)} programme at the \textbf{Indian Institute
+of Information Technology Vadodara} have successfully completed the
+laboratory work for \textbf{CS545 -- Software Engineering}, covering
+Experiments 1 to 9, during the academic year \textbf{2026--2027}.
+
+The laboratory work has been carried out as part of the course
+requirements through the team project titled \textbf{``Wereverse''.}
+
+Wereverse is a unified retail management system for a fashion shop. It
+combines shop billing that works offline, one shared stock for shop and
+website, khata (credit) with WhatsApp bills and a Pay Now link, two-way
+Tally integration, employee payroll, and saree fall-pico job tracking.
+
+The details of the team members are as follows:
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.1217}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.4956}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3827}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{S. No.}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Name of Student}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Enrollment Number}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+1 & Ankit Kumar Sharma & 20252651007 \\
+2 & Piyush Lalchand Menghani & 20252651039 \\
+3 & Shubham Gupta & 20252651021 \\
+4 & Vijay Singh & 20252651064 \\
+5 & Vivek Kumar Kosta & 20252651065 \\
+\end{longtable}
+
+This certificate is issued in recognition of the completion and
+submission of the prescribed laboratory work in accordance with the
+requirements of the course.
+
+\begin{quote}
+Date: 29-10-2026
+
+Faculty Signature: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+
+Faculty Name: Rishabh Gupta
+\end{quote}
+
+\clearpage
+\section*{DECLARATION}\label{declaration}
+
+\begin{quote}
+We hereby declare that the project entitled ``Wereverse'', submitted as
+part of the coursework for CS545 -- Software Engineering at the Indian
+Institute of Information Technology Vadodara, is our original work
+carried out under the guidance of Rishabh Gupta.
+
+We declare that this report has been prepared by our team for academic
+purposes. The information presented in this report is accurate to the
+best of our knowledge, and all sources used have been appropriately
+acknowledged. We understand that any work or material taken from other
+sources must be properly cited.
+
+\textbf{Project Title:} Wereverse
+
+\textbf{Course Code:} CS545 -- Software Engineering
+
+\textbf{Group Number:} 36
+
+\textbf{Team Members:}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.1217}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.4956}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3827}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{S. No.}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Name of Student}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Enrollment Number}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+1 & Ankit Kumar Sharma & 20252651007 \\
+2 & Piyush Lalchand Menghani & 20252651039 \\
+3 & Shubham Gupta & 20252651021 \\
+4 & Vijay Singh & 20252651064 \\
+5 & Vivek Kumar Kosta & 20252651065 \\
+\end{longtable}
+
+\begin{quote}
+\textbf{Place:} IIIT Vadodara
+
+\textbf{Date:} 29-10-2026
+
+\textbf{Signatures of Team Members:}
+
+1. Ankit Kumar Sharma: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+
+2. Piyush Lalchand Menghani: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+
+3. Shubham Gupta: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+
+4. Vijay Singh: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+
+5. Vivek Kumar Kosta: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+\end{quote}
+
+\clearpage
+\section*{ACKNOWLEDGEMENT}\label{acknowledgement}
+
+\begin{quote}
+We would like to express our sincere gratitude to Rishabh Gupta, our
+faculty guide for the course CS545 -- Software Engineering, for his
+guidance and support throughout the development of our project,
+``Wereverse.''
+
+We are thankful to the Indian Institute of Information Technology
+Vadodara for providing us with the opportunity to work on this project
+and apply our software engineering concepts in a practical setting.
+
+We would also like to thank our faculty members and classmates for their
+valuable suggestions and encouragement. Their support has helped us
+improve our understanding of software development, system design, and
+project management.
+
+Finally, we would like to thank all our team members for their
+cooperation, teamwork, and contributions toward the planning and
+development of Wereverse.
+
+\textbf{Team Members:}
+
+1. Ankit Kumar Sharma
+
+2. Piyush Lalchand Menghani
+
+3. Shubham Gupta
+
+4. Vijay Singh
+
+5. Vivek Kumar Kosta
+
+\textbf{Group No.:} 36
+\end{quote}
+
+\clearpage
+\section*{TABLE OF CONTENTS}\label{table-of-contents}
+\vspace{0.5cm}
+\begin{center}
+\renewcommand{\arraystretch}{1.55}
+\begin{tabular}{|c|p{10.2cm}|c|}
+\hline
+\textbf{Experiment No.} & \centering\arraybackslash\textbf{Title} & \textbf{Page No.}\\
+\hline
+1 & Problem Statement and Software Requirements Specification (SRS) & \pageref{lab-experiment-1}\\
+\hline
+2 & Software Process Model, Project Planning and Risk Management & \pageref{lab-experiment-2}\\
+\hline
+3 & Use Case Diagram and Use Case Descriptions & \pageref{lab-experiment-3}\\
+\hline
+4 & Class Diagram & \pageref{lab-experiment-4}\\
+\hline
+5 & Sequence Diagrams & \pageref{lab-experiment-5}\\
+\hline
+6 & Activity Diagram and State Chart Diagram & \pageref{lab-experiment-6}\\
+\hline
+7 & ER Diagram, Deployment Diagram and Test Cases & \pageref{lab-experiment-7}\\
+\hline
+8 & Modular Design of a Software System & \pageref{lab-experiment-8}\\
+\hline
+9 & Functional Test Case Design & \pageref{lab-experiment-9}\\
+\hline
+ & Overall Conclusion & \pageref{overall-conclusion}\\
+\hline
+ & References & \pageref{references}\\
+\hline
+\end{tabular}
+\end{center}
+\clearpage
+
+\section{LAB EXPERIMENT 1}\label{lab-experiment-1}
+
+\subsection{Problem Statement and Software Requirements Specification
+(SRS)}\label{problem-statement-and-software-requirements-specification-srs}
+
+\begin{quote}
+\textbf{Aim}
+
+To study the problem domain of Wereverse and prepare its Software
+Requirements Specification: problem statement, scope, users, functional
+requirements and non-functional requirements.
+\end{quote}
+
+\subsection{Problem Statement}\label{problem-statement}
+
+\begin{quote}
+The client runs one fashion shop (with saree sales) and wants to sell
+through a website as well. Today the counter bills in TallyPrime, credit
+sales (\emph{khata}) are tracked by hand, customers are not told their
+dues quickly, staff salary and advances are calculated manually, and
+saree fall-pico work given to outside workers is tracked in a register.
+Shop and website stock are not linked, so items can be oversold and
+counted twice.
+
+\textbf{Wereverse} is one system that runs the whole business: shop
+billing that works offline, one shared stock for shop and website, khata
+with instant WhatsApp bills and a Pay Now link, two-way Tally
+integration so the accountant never enters data twice, employee payroll,
+and fall-pico job and wage tracking. AI features (recommendations,
+chatbot, demand forecast) are added in later phases.
+\end{quote}
+
+\subsection{Objectives}\label{objectives}
+
+\begin{itemize}
+\item
+  One stock for shop and website, so nothing is oversold and nobody
+  counts twice.
+\item
+  Fast shop billing that keeps working when the internet is down.
+\item
+  Khata customers get an instant WhatsApp bill and can pay from home;
+  the owner always knows who owes what.
+\item
+  Tally always matches Wereverse, without double entry by the
+  accountant.
+\item
+  Clear staff salary, advance and fall-pico wage records so disputes are
+  rare.
+\item
+  AI to increase sales and improve buying decisions (Phase 2 and 3).
+\end{itemize}
+
+\subsection{Scope}\label{scope}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.6000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.4000}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{In scope (Phase 1)}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Out of scope (for now)}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Shared catalog and stock with barcodes; POS billing with offline mode;
+khata with WhatsApp bills and Pay Now; two-way Tally integration;
+employees and payroll; fall-pico; basic purchasing; basic website
+(browse, cart, checkout, payments, shipping, returns); roles, audit log,
+owner dashboard and reports. & Native mobile apps, international sales,
+wholesale portal, AR try-on, Amazon/Flipkart sync, multiple shops, and a
+SaaS platform for other brands. \\
+\end{longtable}
+
+\subsection{Users of the System}\label{users-of-the-system}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.3200}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.6800}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{User}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Main needs}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Owner & Full view of sales, cash, khata, stock and salary; approvals;
+buying decisions \\
+Manager & Daily operations, discounts, attendance, fall-pico
+assignment \\
+Cashier / sales staff & Quick billing, khata sales, returns \\
+Accountant & Tally sync, reconciliation, GST, salary sheets \\
+Online order staff & Pick, pack and ship website orders \\
+Fall-pico supervisor and workers & Job list, quality check, earnings \\
+Employee & Own attendance, salary, advance and balance \\
+Khata customer & Own bills and balance; pay from home \\
+Online customer & Browse, buy, track and return \\
+\end{longtable}
+
+\subsection{Functional Requirements}\label{functional-requirements}
+
+\begin{quote}
+Requirements are grouped by SRS module code. Each module is delivered in
+Phase 1 unless stated.
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.2800}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.7200}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Module (SRS ID)}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Functional requirements}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Catalog and stock (FR-CAT) & Maintain products and variants (price, MRP,
+GST rate, HSN, fall-pico flag); print barcode labels; keep one stock
+ledger where every change is a stock movement; reserve stock for unpaid
+online orders and release after 30 minutes; stock count with reasoned
+adjustments. \\
+Shop billing (FR-POS) & Scan-first billing; split payment (cash, UPI,
+card, khata); discounts within role limits, above limit needs manager
+PIN; returns and exchanges; cash register open/close; works offline with
+a local queue and idempotent sync (FR-POS-08). \\
+Khata (FR-KHT) & Open khata accounts with credit limit and credit days;
+append-only ledger (sale, payment, return, adjustment, write-off,
+reversal); credit-limit check with manager override; oldest-bill-first
+allocation; ageing report; reminder rules. \\
+WhatsApp (FR-WAP) & Send bill, receipt, reminder and fall-pico-ready
+messages using approved templates; AI writes wording around placeholders
+only; validator rejects any wrong number; SMS fallback; opt-in, opt-out
+and quiet hours. \\
+Pay from home (FR-PRT, FR-PAY) & Signed Pay Now link valid 7 days
+showing balance and bills; part or full payment through Razorpay;
+payment confirmed only by verified webhook; overpayment becomes advance
+credit. \\
+Tally integration (FR-TLY) & Mode A: import bills made in TallyPrime;
+Mode B: push POS sales to Tally; always push online orders and receipts;
+mapping of items and ledgers; Sync Issues screen; nightly
+reconciliation; unique voucher reference so retries never duplicate. \\
+Employees (FR-EMP) & Attendance (manager entry + PIN); monthly and daily
+salary; incentive, overtime, advances and recovery; salary run draft,
+owner approval and lock; employee sees own statement only. \\
+Fall-pico (FR-FPC) & Create a job for each eligible saree above the
+price limit (default Rs. 1,000); print tag; assign workers; QC pass/fail
+with rework; per-piece wage on QC pass; online order cannot be packed
+until QC passed or skipped. \\
+Purchasing (FR-PUR-01..03) & Supplier bills, stock-in and label
+printing. \\
+Website (FR-STO, FR-CHK, FR-ORD) & Browse, search, cart, checkout, order
+tracking, shipping and returns; no khata option for online customers. \\
+Admin and reports (FR-AUT, FR-ADM, FR-RPT, FR-NOT) & Role-based access,
+complete audit log, settings, owner dashboard, sales and GST reports,
+notifications. \\
+AI (FR-AI, Phase 2/3) & Recommendations, chatbot, smart search, size
+help, description writer, poster maker; later visual search, demand
+forecast and what-to-buy. \\
+\end{longtable}
+
+\subsection{Non-Functional
+Requirements}\label{non-functional-requirements}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.2400}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.7600}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Category}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Requirement}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Performance & Item appears within 1 second of scan; 3-item cash bill
+under 30 seconds; API p95 under 400 ms; website LCP under 2.5 s on
+4G. \\
+Availability / offline & POS keeps billing with no internet; queue
+clears within 1 minute of internet returning; AI failure never stops
+billing. \\
+Data integrity & Money stored as whole paise; ledgers and stock tables
+append-only; daily integrity job recomputes balances (NFR-DATA-01); zero
+duplicate or lost Tally vouchers. \\
+Security & HTTPS, hashed passwords, 2FA for owner; role checks on every
+API; webhooks verified by signature; Tally interface never exposed to
+the internet. \\
+Privacy & Salary and khata data encrypted and access-logged; no personal
+data sent to external AI models; WhatsApp opt-in recorded. \\
+Usability & POS text at least 16 px and main buttons at least 56 px;
+simple Hindi-friendly pages for workers and customers; mobile-first
+website. \\
+Maintainability & Modular monolith (FastAPI), typed code, migrations
+only through Alembic, 2 reviewers for money and Tally code. \\
+\end{longtable}
+
+\subsection{Constraints and
+Assumptions}\label{constraints-and-assumptions}
+
+\begin{itemize}
+\item
+  The shop has one counter and bills in TallyPrime today; Wereverse
+  starts in Mode A and moves to its own POS (Mode B) after a clean
+  parallel run.
+\item
+  TallyPrime runs on a 24-hour cloud Windows server in India, with the
+  sync agent on the same server.
+\item
+  Technology stack: FastAPI, React + Vite + TypeScript, PostgreSQL,
+  Celery + Redis, hosted on AWS Mumbai.
+\item
+  Items marked {[}Assumption{]} or {[}TBD{]} in the source documentation
+  (hardware models, WhatsApp provider, hosting licence) are still to be
+  confirmed by the client.
+\end{itemize}
+
+\subsection{Conclusion}\label{conclusion}
+
+\begin{quote}
+The SRS converts the shop\textquotesingle s daily problems into clear,
+testable requirements grouped by module. Separating functional from
+non-functional requirements made the hard limits (offline billing, exact
+money, no duplicate vouchers) visible early, and these drive every later
+design decision.
+\end{quote}
+
+\clearpage
+\section{LAB EXPERIMENT 2}\label{lab-experiment-2}
+
+\subsection{Software Process Model, Project Planning and Risk
+Management}\label{software-process-model-project-planning-and-risk-management}
+
+\begin{quote}
+\textbf{Aim}
+
+To select a suitable software process model for Wereverse, and to
+prepare the project plan: team roles, schedule, milestones and risk
+management.
+\end{quote}
+
+\subsection{Choice of Process Model: Incremental Model with Agile (Scrum)
+Sprints}\label{choice-of-process-model-incremental-model-with-agile-scrum-sprints}
+
+\begin{quote}
+Wereverse is built as a series of increments, each delivered through
+two-week Scrum sprints. Each increment is used in the real shop for
+about a week before the next one starts. This model was selected
+because:
+\end{quote}
+
+\begin{itemize}
+\item
+  \textbf{The shop must never stop billing.} The counter keeps billing
+  in TallyPrime (Mode A) while new modules go live one by one; the POS
+  replaces Tally billing only after a clean parallel run.
+\item
+  \textbf{Requirements are mostly known but some decisions are open}
+  (hardware, WhatsApp provider, fall-pico rules). Incremental delivery
+  lets these be settled without blocking earlier modules.
+\item
+  \textbf{Early value:} khata with WhatsApp bills and Pay Now reaches
+  the shop by Week 10, long before the website.
+\item
+  \textbf{Risk control:} the riskiest part (Tally sync) is built and
+  tested first, against a test company.
+\item
+  A pure Waterfall model would deliver nothing until the end; a pure
+  prototype model does not suit money and GST logic that must be exact.
+\end{itemize}
+
+\subsubsection{Rollout order
+(increments)}\label{rollout-order-increments}
+
+\begin{itemize}
+\item
+  Increment 1: data import, shared stock and Tally sync while the
+  counter bills in TallyPrime (Mode A).
+\item
+  Increment 2: khata, WhatsApp bills and Pay Now.
+\item
+  Increment 3: POS billing run side by side with Tally, then cutover to
+  Mode B.
+\item
+  Increment 4: employees, fall-pico and purchasing.
+\item
+  Increment 5: the website. AI features follow as Phase 2 and Phase 3.
+\end{itemize}
+
+\subsection{Team Roles}\label{team-roles}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.2700}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.4800}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.2500}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Role}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Owns}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Also helps with}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Frontend and POS developer & POS app (offline), back-office UI, website,
+simple pages & Design QA \\
+Backend developer (lead) & Core API, stock, billing, khata ledger,
+payroll, fall-pico, database, hosting & CI/CD \\
+Integration developer & Tally sync agent, WhatsApp, Razorpay, courier,
+SMS and email & Reconciliation and reports \\
+AI engineer & AI service, WhatsApp wording and validator,
+recommendations, chatbot, forecasts & Data pipelines, search \\
+PM, QA and design lead & SRS, planning, Figma, test cases, UAT, client
+and accountant communication & Training and handover \\
+\end{longtable}
+
+\subsection{Project Schedule (Phase 0 and Phase 1, 20
+weeks)}\label{project-schedule-phase-0-and-phase-1-20-weeks}
+
+\includegraphics[width=6.235in,height=2.32906in]{media/media/image2.jpeg}
+
+\begin{quote}
+\emph{Figure 2.1: Gantt chart of sprints S0 to S9 with milestones M1 to
+M6}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.1400}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.1000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.7600}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Milestone}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Week}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Deliverable}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+M1 & 2 & SRS signed; designs and architecture approved; Tally cloud
+server access and version confirmed; Tally data sample checked \\
+M2 & 6 & Mode A on staging: Tally import (items, parties, vouchers),
+shared stock, Tally sync, Sync Issues screen \\
+M3 & 10 & Khata, WhatsApp bills, Pay Now and Tally receipts live in the
+shop \\
+M4 & 16 & POS billing (offline), employees, purchasing and fall-pico
+working; POS parallel run in progress \\
+M5 & 18 & Website checkout, orders and shipping working; UAT done \\
+M6 & 20 & Parallel run clean, new bill series approved, POS cutover and
+go-live \\
+\end{longtable}
+
+\subsection{Risk Management}\label{risk-management}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.0700}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.2700}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1600}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1500}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.3500}}@{}}
+\toprule\noalign{}
+\textbf{\#} & \textbf{Risk} & \textbf{Impact} & \textbf{Likelihood} & \textbf{Mitigation} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+R1 & Tally sync harder than expected (version, locked periods,
+duplicates) & Wrong books, delay & High & Check in Sprint 0; test
+company; outbox with unique references; daily reconciliation \\
+R2 & WhatsApp template approval slow or rejected & Bills cannot be sent
+& Medium & Submit in Week 1; SMS fallback; simple wording \\
+R3 & Scope too large for 5 people & Late launch & High & Phase plan;
+shop first, website last; AI after go-live; strict change control \\
+R4 & Offline POS creates conflicts or duplicate bills & Wrong stock or
+money & Medium & Idempotency keys, per-counter series, conflict alerts,
+offline testing \\
+R5 & Wrong opening balances at migration & Customer disputes & Medium &
+Owner sign-off per balance; parallel run \\
+R8 & AI writes a wrong amount & Trust and money & Low & Placeholders,
+validator, template fallback, zero-error test \\
+R13 & Counter billing in cloud Tally stops when internet fails & Billing
+stops & Medium & Backup internet, paper bill book, move to offline
+POS \\
+R15 & Tally data quality (duplicate parties, missing phones) & Wrong or
+missing messages & Medium & Sample check in Sprint 0; clean-up; Sync
+Issues screen \\
+R17 & New bill number series wrong under GST & Compliance & Low &
+Design with accountant; test on staging; rehearse cutover \\
+\end{longtable}
+
+\subsection{Conclusion}\label{conclusion-1}
+
+\begin{quote}
+The incremental model with two-week sprints fits a live business that
+cannot stop trading. The plan front-loads the riskiest integration
+(Tally), delivers khata value early, and uses a parallel run as the gate
+before the POS cutover. The risk register links each major risk to a
+concrete mitigation.
+\end{quote}
+
+\clearpage
+\section{LAB EXPERIMENT 3}\label{lab-experiment-3}
+
+\subsection{Use Case Diagram and Use Case
+Descriptions}\label{use-case-diagram-and-use-case-descriptions}
+
+\begin{quote}
+\textbf{Aim}
+
+To identify the actors and use cases of Wereverse and draw the use case
+diagram, with detailed descriptions for the key use cases.
+\end{quote}
+
+\subsection{Actors}\label{actors}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.2700}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.1800}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.5500}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Actor}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Type}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Description}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Cashier & Primary & Makes cash, split and khata bills, returns and day
+close at the counter \\
+Manager & Primary & Approves over-limit credit and discounts; marks
+attendance \\
+Owner & Primary & Views dashboard and reports; approves salary runs,
+advances and write-offs \\
+Accountant & Primary & Monitors Tally sync, fixes sync issues,
+reconciles, prepares salary sheets \\
+Employee & Primary & Views own attendance, salary and advance balance \\
+Khata customer & Primary & Receives WhatsApp bills and pays dues through
+the Pay Now link \\
+Online customer & Primary & Browses, buys, tracks and returns orders on
+the website \\
+Fall-pico supervisor / worker & Primary & Assigns jobs and checks
+quality / views own jobs and earnings \\
+WhatsApp API, Razorpay, Tally agent & Secondary (systems) & External
+systems for messages, payments and accounting sync \\
+\end{longtable}
+
+\begin{quote}
+\includegraphics[width=5.7686in,height=6.81406in]{media/media/image3.jpeg}
+
+\emph{Figure 3.1: Use case diagram of Wereverse}
+\end{quote}
+
+\subsection{Use Case Description: Make Khata (Credit)
+Bill}\label{use-case-description-make-khata-credit-bill}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.7500}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Field}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Description}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Use case ID / Name & UC-02 / Make khata (credit) bill \\
+Primary actor & Cashier \\
+Secondary actors & Manager, WhatsApp API, Tally agent \\
+Pre-conditions & Cashier is logged in; customer has an open khata
+account; items have barcodes. \\
+Main flow & 1. Cashier finds customer by phone. 2. Scans items. 3.
+Chooses Khata as payment. 4. System shows balance and limit (include:
+Check credit limit). 5. Cashier confirms. 6. System saves the bill,
+deducts stock, adds a SALE ledger entry and queues WhatsApp and Tally
+messages. 7. Bill is printed and the customer receives a WhatsApp bill
+with a Pay Now link. \\
+Alternate flows & 4a. Limit crossed: manager approves with PIN and
+reason (extend: Approve over-limit), otherwise payment mode is changed.
+6a. No internet: bill is saved in the local queue and synced later with
+the same idempotency key. 7a. WhatsApp fails: SMS is sent and the entry
+is flagged. \\
+Post-conditions & Ledger balance increased; stock reduced; fall-pico
+jobs created for eligible sarees; Tally sales voucher posted (Mode
+B). \\
+Related requirements & FR-KHT, FR-POS-08, FR-WAP, FR-TLY \\
+\end{longtable}
+
+\subsection{Use Case Description: Pay Dues via Pay Now
+Link}\label{use-case-description-pay-dues-via-pay-now-link}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.7500}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Field}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Description}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Use case ID / Name & UC-08 / Pay dues via Pay Now link \\
+Primary actor & Khata customer \\
+Secondary actors & Razorpay, WhatsApp API, Tally agent \\
+Pre-conditions & Customer received a valid signed link (valid 7
+days). \\
+Main flow & 1. Customer opens the link. 2. System shows balance and
+recent bills. 3. Customer chooses an amount and pays by UPI. 4. Razorpay
+sends a signed webhook. 5. System writes a PAYMENT ledger entry,
+allocates it to the oldest bills, and queues a WhatsApp receipt and a
+Tally receipt voucher. \\
+Alternate flows & 1a. Link expired or belongs to someone else: access
+denied. 4a. Duplicate webhook: ignored. 5a. Overpayment: stored as
+advance credit. \\
+Post-conditions & Balance reduced; receipt sent; Tally updated. \\
+Related requirements & FR-PRT, FR-PAY, FR-KHT \\
+\end{longtable}
+
+\subsection{Conclusion}\label{conclusion-2}
+
+\begin{quote}
+The use case diagram shows who uses Wereverse and for what, across the
+shop, the back office, the website and external systems. The include and
+extend relationships capture the credit-limit rule, and the detailed
+descriptions record the alternate flows (offline, over-limit, duplicate
+webhook) that matter most for correctness.
+\end{quote}
+
+\clearpage
+\section{LAB EXPERIMENT 4}\label{lab-experiment-4}
+
+\subsection{Class Diagram}\label{class-diagram}
+
+\begin{quote}
+\textbf{Aim}
+
+To identify the main classes of Wereverse with their attributes,
+operations and relationships, and draw the class diagram.
+
+\includegraphics[width=5.55764in,height=8.6075in]{media/media/image4.png}
+
+\emph{Figure 4.1: Class diagram of Wereverse (core domain), rotated for
+readability}
+\end{quote}
+
+\subsection{Class Responsibilities}\label{class-responsibilities}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.3000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.7000}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Class}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Responsibility}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Customer & One record per person, identified by a unique phone number;
+owns bills, orders and at most one khata account. \\
+KhataAccount / LedgerEntry & Credit limit and days; append-only entries
+with running balance. Mistakes are fixed by a reversal entry, never by
+editing. \\
+Bill / BillItem / BillPayment & Shop sale with a unique bill number and
+idempotency key; source tells POS bills from Tally imports; payment
+split by mode. \\
+Product / Variant & Catalog; variant holds price, MRP, GST, HSN, barcode
+and the fall-pico flag. \\
+StockLevel / StockMovement & Current on-hand and reserved quantity;
+every change is recorded as a movement (one stock ledger). \\
+Order / Payment & Online order lifecycle; payment confirmed only by
+verified gateway webhook with a unique gateway ID. \\
+FallPicoJob / FpWorker & Job state machine, worker assignment and
+per-piece wages. \\
+Employee / SalaryRun & Attendance-based salary, advances and
+owner-approved monthly runs. \\
+OutboxItem / MessageJob & Reliable delivery to Tally and WhatsApp: saved
+in the same transaction as the sale and sent later with retries. \\
+\end{longtable}
+
+\subsection{Relationships Used}\label{relationships-used}
+
+\begin{itemize}
+\item
+  \textbf{Composition} (filled diamond): Bill to BillItem and
+  BillPayment, KhataAccount to LedgerEntry, Product to Variant; parts
+  cannot exist without the whole.
+\item
+  \textbf{Aggregation} (hollow diamond): Customer to KhataAccount; the
+  account belongs to a customer, who can exist without credit.
+\item
+  \textbf{Association} with multiplicity: Customer places 0..* Bills and
+  Orders; a BillItem refers to one Variant and may create 0..1
+  FallPicoJob; an FpWorker works on many jobs.
+\end{itemize}
+
+\subsection{Conclusion}\label{conclusion-3}
+
+\begin{quote}
+The class diagram turns the SRS nouns into a clean domain model. Key
+design rules are visible directly in the model: money in paise as
+integers, append-only ledgers, idempotency keys on bills and the outbox
+for reliable integration.
+\end{quote}
+
+\clearpage
+\section{LAB EXPERIMENT 5}\label{lab-experiment-5}
+
+\subsection{Sequence Diagrams}\label{sequence-diagrams}
+
+\begin{quote}
+\textbf{Aim}
+
+To show the time-ordered interaction between objects for the two most
+important scenarios of Wereverse using sequence diagrams.
+\end{quote}
+
+\subsection{Sequence Diagram 1: Khata Sale at the POS to WhatsApp and
+Tally (Mode
+B)}\label{sequence-diagram-1-khata-sale-at-the-pos-to-whatsapp-and-tally-mode-b}
+
+\includegraphics[width=6.22271in,height=6.14125in]{media/media/image5.jpeg}
+
+\begin{quote}
+\emph{Figure 5.1: Sequence diagram for a khata sale}
+
+The POS saves the bill locally first and sends it with an idempotency
+key, so a retry never creates a second bill. The API saves the bill,
+stock change, ledger entry, fall-pico jobs and outbox rows in
+\textbf{one database transaction}. Workers then deliver the WhatsApp
+message and the Tally voucher asynchronously, so a WhatsApp or Tally
+outage never blocks billing. The AI service only writes wording around
+placeholders; the validator fills real numbers from the ledger.
+\end{quote}
+
+\subsection{Sequence Diagram 2: Customer Pays Dues through the Pay Now
+Link}\label{sequence-diagram-2-customer-pays-dues-through-the-pay-now-link}
+
+\includegraphics[width=6.0825in,height=5.23125in]{media/media/image6.jpeg}
+
+\begin{quote}
+\emph{Figure 5.2: Sequence diagram for Pay Now payment}
+
+Payment is never trusted from the browser. Only the signed Razorpay
+webhook creates the PAYMENT ledger entry, and a duplicate webhook with
+the same payment ID does nothing. The payment is allocated to the oldest
+bills first so the ageing report stays accurate.
+\end{quote}
+
+\subsection{Conclusion}\label{conclusion-4}
+
+\begin{quote}
+The sequence diagrams make the order of messages and the transaction
+boundaries explicit. They show how the outbox pattern, idempotency keys
+and webhook verification work together to keep money and stock correct.
+\end{quote}
+
+\clearpage
+\section{LAB EXPERIMENT 6}\label{lab-experiment-6}
+
+\subsection{Activity Diagram and State Chart
+Diagram}\label{activity-diagram-and-state-chart-diagram}
+
+\begin{quote}
+\textbf{Aim}
+
+To model the workflow of the khata billing process with an activity
+diagram, and the life cycle of a fall-pico job with a state chart
+diagram.
+\end{quote}
+
+\subsection{Activity Diagram: Khata Billing at the
+Counter}\label{activity-diagram-khata-billing-at-the-counter}
+
+\includegraphics[width=4.39969in,height=6.365in]{media/media/image7.png}
+
+\begin{quote}
+\emph{Figure 6.1: Activity diagram for khata billing}
+
+Decision nodes handle repeated scanning, the credit-limit check with
+manager approval, and the online/offline branch. The fork shows the
+three actions done in the same transaction (bill and ledger, fall-pico
+jobs, outbox rows), which join before the bill is printed and the
+WhatsApp bill is sent.
+\end{quote}
+
+\subsection{State Chart Diagram: Fall-Pico
+Job}\label{state-chart-diagram-fall-pico-job}
+
+\includegraphics[width=6.32667in,height=1.015in]{media/media/image8.jpeg}
+
+\begin{quote}
+\emph{Figure 6.2: State chart diagram of a fall-pico job}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.3000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.7000}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{State}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Meaning}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+PENDING & Created when a saree above the price limit is billed (or an
+online order is paid) \\
+ASSIGNED / IN\_PROGRESS & Supervisor assigns a worker; worker starts the
+work \\
+COMPLETED & Worker returns the saree for quality check \\
+REWORK & QC failed; rework is not paid again \\
+QC\_PASSED & Quality passed; wage = worker rate x pieces becomes
+payable \\
+READY / HANDED\_OVER & Customer told on WhatsApp; saree collected or
+online order packed \\
+CANCELLED & Customer declined or the bill was returned \\
+\end{longtable}
+
+\subsection{Conclusion}\label{conclusion-5}
+
+\begin{quote}
+The activity diagram captures the business rules of a khata sale,
+including approvals and offline behaviour. The state chart gives the
+fall-pico job a strict life cycle, which makes wages, tracking of every
+saree and the online packing rule easy to enforce.
+\end{quote}
+
+\clearpage
+\section{LAB EXPERIMENT 7}\label{lab-experiment-7}
+
+\subsection{ER Diagram, Deployment Diagram and Test
+Cases}\label{er-diagram-deployment-diagram-and-test-cases}
+
+\begin{quote}
+\textbf{Aim}
+
+To design the data model (ER diagram), the physical deployment of
+Wereverse, and the test cases used to verify the system.
+\end{quote}
+
+\subsection{ER Diagram}\label{er-diagram}
+
+\includegraphics[width=5.82187in,height=5.56875in]{media/media/image9.png}
+
+\begin{quote}
+\emph{Figure 7.1: ER diagram of the main Wereverse entities}
+
+Database rules: UUID primary keys; money stored in paise as integers;
+dates in UTC shown in IST; financial and stock tables are append-only
+with reversals only; unique constraints on bill number per counter,
+voucher reference, gateway payment ID and idempotency keys; every bill
+and stock movement records its source (pos, website, tally\_import).
+\end{quote}
+
+\subsection{Deployment Diagram}\label{deployment-diagram}
+
+\includegraphics[width=6.19875in,height=3.47344in]{media/media/image10.png}
+
+\begin{quote}
+\emph{Figure 7.2: Deployment diagram of Wereverse}
+
+The application runs on AWS Mumbai as a FastAPI modular monolith with
+PostgreSQL, Redis and Celery workers, plus a separate AI service. The
+POS is an installable web app on the counter PC. TallyPrime and the sync
+agent run on a 24-hour cloud server in India; the agent only makes
+\textbf{outbound} HTTPS calls, so Tally is never exposed to the
+internet.
+\end{quote}
+
+\subsection{Test Cases}\label{test-cases}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.0700}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.1300}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.4000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.4000}}@{}}
+\toprule\noalign{}
+\textbf{ID} & \textbf{Area} & \textbf{Test} & \textbf{Expected result} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+T01 & POS & 3-item cash bill & Bill printed, website stock drops, Tally
+sales voucher within 5 minutes \\
+T02 & POS & Split payment: cash + UPI + khata & Each part recorded; khata
+part added to ledger \\
+T04 & POS & Internet off, make 5 bills, turn on & All 5 synced once; no
+duplicate numbers \\
+T05 & Stock & Last unit bought at shop and online together & One
+succeeds; the other gets a clear message \\
+T06 & Khata & Credit sale within limit & Ledger entry; WhatsApp bill
+with correct amounts within 1 minute \\
+T07 & Khata & Credit sale over limit & Blocked; manager override logged
+with reason \\
+T08 & WhatsApp & AI text has a wrong amount & Standard template sent
+with correct amount \\
+T10 & Pay Now & Customer pays part amount & Balance falls; WhatsApp
+receipt; Tally receipt voucher \\
+T11 & Pay Now & Same webhook delivered twice & Only one ledger entry \\
+T13 & Ledger & Try to edit or delete an entry & Denied; reversal works
+and both entries show \\
+T15 & Tally & Tally closed, 20 bills made, Tally opened & 20 vouchers
+synced once each, in order \\
+T19 & Payroll & 24 payable days, salary 15,000, advance 5,000 with
+1,000 recovery, 6,000 paid & Earned 12,000; net 11,000; pending 5,000;
+advance balance 4,000 \\
+T22 & Fall-pico & Saree at 1,000 and at 1,001 & No job at 1,000; job at
+1,001 \\
+T24 & Fall-pico & Online saree order & Cannot be packed until QC passed
+or skipped \\
+T29 & Access & Cashier tries a write-off & Denied (403) \\
+T34 & Mode A & Sale made in TallyPrime & Website stock drops within 5
+minutes; sale saved once \\
+T36 & Mode A & Khata bill with an unmatched party & Goes to Sync
+Issues; no message sent \\
+\end{longtable}
+
+\begin{quote}
+Release gate: no Critical or High bugs open; all test cases pass on
+staging; a two-week parallel run shows zero unexplained difference
+between Wereverse and Tally; owner, accountant and shop staff sign off
+UAT.
+\end{quote}
+
+\subsection{Conclusion}\label{conclusion-6}
+
+\begin{quote}
+The ER diagram fixes the persistent structure behind the class model,
+the deployment diagram shows where each component runs and how Tally
+stays secure, and the test cases trace back to the requirements of
+Experiment 1, with special focus on money, stock and
+duplicate-prevention.
+\end{quote}
+
+\clearpage
+\section{LAB EXPERIMENT 8}\label{lab-experiment-8}
+
+\subsection{Modular Design of a Software
+System}\label{modular-design-of-a-software-system}
+
+\begin{quote}
+\textbf{Aim}
+
+To divide Wereverse into modules with one clear responsibility each,
+define the interfaces between the modules, and justify the design in
+terms of cohesion and coupling.
+\end{quote}
+
+\subsection{Background}\label{background}
+
+\begin{quote}
+\textbf{Modular design} divides a system into separate parts called
+modules, each handling one specific responsibility, so that every module
+can be built, tested and changed on its own. An \textbf{interface} is
+the defined way in which one module asks another for a service: it
+states the operation, the input and the output. \textbf{Cohesion}
+measures how closely the tasks inside one module are related; high
+cohesion is desirable. \textbf{Coupling} measures how strongly one
+module depends on another; low coupling is desirable.
+
+Wereverse is built as a \textbf{modular monolith} (SRS section 4.3): one
+FastAPI application deployed as one unit and divided inside into
+modules, each with its own router, schemas, service, repository, models
+and events. Routers never write to tables directly; anything that writes
+to stock, ledgers, salary or the outbox goes through a service function
+with one transaction and an audit entry (SRS section 11.2). This keeps
+the system simple for a five-member team, and modules can be split into
+services later.
+\end{quote}
+
+\subsection{Functional Requirements}\label{functional-requirements-1}
+
+\begin{quote}
+Table 8.1 lists the functional requirements of Experiment 1 by their SRS
+module codes. They are used below to check that every requirement
+belongs to at least one module.
+
+\emph{Table 8.1: Functional requirements of Wereverse}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.1934}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.8066}}@{}}
+\toprule\noalign{}
+\textbf{ID} & \textbf{Requirement / action performed by the system} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{FR-AUT, FR-ADM} & Role-based access, 2FA for the owner, complete
+audit log (who, what, old value, new value, when, device) and
+settings. \\
+\textbf{FR-CAT} & Products and variants with barcodes and labels; one
+stock ledger where every change is a stock movement; online reservation
+released after 30 minutes; stock count with reasoned adjustments. \\
+\textbf{FR-PUR} & Supplier bills, stock-in and label printing. \\
+\textbf{FR-POS} & Scan-first billing; split payment (cash, UPI, card,
+khata); discounts within role limits and manager PIN above; returns and
+exchanges; cash register; offline billing with idempotent sync. \\
+\textbf{FR-KHT} & Khata accounts with credit limit; append-only ledger;
+credit-limit check with manager override; oldest-bill-first allocation;
+ageing report; reminder rules. \\
+\textbf{FR-WAP, FR-NOT} & WhatsApp bill, receipt, reminder and
+fall-pico-ready messages from approved templates; AI wording around
+placeholders only; SMS fallback; opt-in and quiet hours;
+notifications. \\
+\textbf{FR-PAY, FR-PRT} & Signed Pay Now link valid 7 days; Razorpay
+payment; payment confirmed only by verified webhook; overpayment becomes
+advance credit. \\
+\textbf{FR-TLY} & Mode A import and Mode B push of sales; online orders
+and receipts always pushed; item and ledger mapping; Sync Issues screen;
+nightly reconciliation; unique voucher reference. \\
+\textbf{FR-EMP} & Attendance, monthly and daily salary, incentive,
+overtime, advances and recovery; salary run draft, owner approval and
+lock; employee sees own statement only. \\
+\textbf{FR-FPC} & Job for each eligible saree above the price limit;
+tag; assignment; QC pass or fail with rework; per-piece wage on QC pass;
+online order not packed until QC passed or skipped. \\
+\textbf{FR-STO, FR-CHK, FR-ORD} & Browse, search, cart, checkout, order
+tracking, shipping and returns; no khata option for online customers. \\
+\textbf{FR-RPT} & Owner dashboard, sales and GST reports. \\
+\textbf{FR-AI} & AI wording (Phase 1); recommendations, chatbot, smart
+search, size help, descriptions, posters (Phase 2); visual search,
+demand forecast, what-to-buy (Phase 3). \\
+\end{longtable}
+
+\subsection{Module Identification}\label{module-identification}
+
+\begin{quote}
+The modules follow the business domains of the shop. Table 8.2 gives the
+main responsibility of each module and the requirements it covers.
+
+\emph{Table 8.2: Modules of Wereverse and their responsibilities}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.2210}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.5912}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.1878}}@{}}
+\toprule\noalign{}
+\textbf{Module} & \textbf{Main responsibility} & \textbf{Requirements covered} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{M1 Access, Audit and Settings} & Login (password for staff, OTP
+for customers), token refresh, roles and permission checks on every
+route, 2FA for owner and admin, append-only audit log, shop settings
+(fall-pico limit, tally\_mode, quiet hours). & FR-AUT, FR-ADM \\
+\textbf{M2 Catalog, Stock and Purchasing} & Products, variants, barcodes
+and labels; stock\_movements and stock\_levels; reservations for unpaid
+online orders; stock count; suppliers, purchases and stock-in. & FR-CAT,
+FR-PUR \\
+\textbf{M3 POS Billing} & Scan-first bills, split payment, discounts and
+manager PIN, returns, cash register, GST on the server, bill series per
+counter, offline queue with idempotency key. & FR-POS \\
+\textbf{M4 Customers and Khata Ledger} & Customers, khata accounts and
+limits, append-only ledger (SALE, PAYMENT, RETURN, ADJUSTMENT,
+WRITE\_OFF, REVERSAL), running balance, oldest-bill-first allocation,
+ageing, reminder rules, daily integrity check. & FR-KHT \\
+\textbf{M5 Online Store and Orders} & Browse, search, cart, checkout,
+order status, courier shipments, returns and refunds, coupons. & FR-STO,
+FR-CHK, FR-ORD \\
+\textbf{M6 Payments and Pay Now} & Signed Pay Now links, Razorpay
+orders, signature-verified webhooks, idempotency by gateway payment ID,
+advance credit on overpayment. & FR-PAY, FR-PRT \\
+\textbf{M7 WhatsApp Messaging} & Message jobs, approved templates,
+validator for numbers, opt-in and opt-out, quiet hours, SMS fallback,
+delivery status updates, notifications. & FR-WAP, FR-NOT \\
+\textbf{M8 Tally Integration} & Outbox and inbox, mapping tables,
+voucher types, Mode A import and Mode B push, Sync Issues, nightly
+reconciliation, endpoints for the sync agent (API key). & FR-TLY \\
+\textbf{M9 Employees and Payroll} & Employees, attendance, salary
+formula, incentive, overtime, advances and recovery, salary run (draft,
+approved, locked), own statement. & FR-EMP \\
+\textbf{M10 Fall-Pico} & Job creation for eligible sarees, job states,
+tags, assignment, QC and rework, worker wage ledger, monthly cost
+report. & FR-FPC \\
+\textbf{M11 Reports and Dashboard} & Owner dashboard, sales and GST
+reports; read-only queries over other modules. & FR-RPT \\
+\textbf{M12 AI Service} & Separate FastAPI service: message wording,
+recommendations, chatbot, search, size help, descriptions, posters,
+forecasts, each with a fallback. & FR-AI \\
+\end{longtable}
+
+\begin{quote}
+\textbf{Mapping to the planned repository (SRS section 11.1):} M1 =
+modules auth and settings; M2 = catalog, inventory and purchasing; M3 =
+pos; M4 = customers and khata; M5 = orders and shipping, with the
+storefront in apps/web; M6 = payments; M7 = notifications with the
+whatsapp and sms integrations; M8 = tally with apps/tally-bridge; M9 =
+employees; M10 = fall\_pico; M11 = analytics; M12 = apps/ai-service. The
+Celery worker (apps/worker) runs outbox, reminder, Tally sync and
+reconciliation jobs for M7 and M8.
+\end{quote}
+
+\subsection{Modular Design Diagram}\label{modular-design-diagram}
+
+\begin{quote}
+\begin{center}
+\includegraphics[width=5.63542in,height=7.53819in]{media/media/image11.png}
+\end{center}
+
+Figure 8.1 shows the modules, rotated for readability. Solid arrows are
+direct calls (service function or REST); dashed arrows are asynchronous
+work that goes through the outbox and the worker.
+
+\emph{Figure 8.1: Modular design of Wereverse (module numbers match
+Table 8.2), rotated for readability}
+\end{quote}
+
+\subsection{Interfaces Between
+Modules}\label{interfaces-between-modules}
+
+\begin{quote}
+Table 8.3 describes the main interfaces, with the input each accepts and
+the output it returns. Money is always passed as whole paise, and errors
+use the common codes of SRS section 8.2.
+
+\emph{Table 8.3: Interfaces between modules of Wereverse}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.1823}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2597}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2486}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.3094}}@{}}
+\toprule\noalign{}
+\textbf{Caller to provider} & \textbf{Operation / interface} & \textbf{Input} & \textbf{Output} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+M1 to every module & Permission check on every route & Bearer token from
+the Authorization header & User id and role; or 401 UNAUTHORIZED (not
+logged in or token expired) or 403 FORBIDDEN (role not allowed). \\
+M3 to M2 & Deduct stock (service function, same transaction as the bill)
+& variant\_id, qty, source = pos & Stock movement saved and on\_hand
+reduced. An offline sale that makes stock negative is still accepted and
+a Stock Conflict alert is raised. \\
+M3 to M4 & Check credit limit and add SALE ledger entry & account\_id,
+amount\_paise, bill id & New running balance; or 422
+CREDIT\_LIMIT\_EXCEEDED unless a manager overrides. \\
+M3 to M10 & Create fall-pico job for an eligible saree line & bill item
+id, price, fall\_pico\_eligible flag & Job id (state PENDING) and a tag;
+no job when the price is not above the limit or the customer
+declines. \\
+M3, M5, M6, M2, M9 to Outbox & Write outbox rows in the same transaction
+& Event type, reference ids, unique voucher reference & Row with status
+pending; no direct reply. The worker delivers it later with retries. \\
+Outbox to M7 to WhatsApp provider & Send bill, receipt or reminder &
+Purpose, facts (bill no., amount, balance), customer language & Message
+job sent, delivered, read or failed; on failure an SMS is sent and the
+ledger entry is flagged. \\
+M7 to M12 & POST /ai/message/compose & purpose, language, tone,
+first\_name, placeholders & Text containing only the placeholders and
+source = ai; on timeout (3 s) or failed validation the standard approved
+template is used. \\
+M5 to M2 & Reserve and release stock for an online order & variant\_id,
+qty & reserved increased; released on cancel or after 30 minutes unpaid;
+409 OUT\_OF\_STOCK if the last unit is gone. \\
+M5 to M6 & Start online payment & order id, amount\_paise & Razorpay
+order id; the order stays PENDING\_PAYMENT until the verified webhook
+arrives. \\
+Razorpay to M6 & POST /webhooks/razorpay & Signature header, gateway
+payment id, amount & Payment confirmed and order or ledger updated;
+duplicate webhooks do nothing; a wrong signature is rejected. \\
+M6 to M4 & Record PAYMENT entry and allocate oldest bill first &
+account\_id, amount\_paise, gateway payment id & Allocations and new
+balance; any overpayment becomes advance credit. \\
+M5 to M10 & Pack check for a paid online order & order id & Packing
+allowed only when every saree job is QC\_PASSED or skipped. \\
+Tally agent to M8 & GET /tally/outbox/pending, POST
+/tally/outbox/:id/result, POST /tally/inbox & Agent API key; success or
+error result; raw vouchers read from Tally & Pending voucher items,
+acknowledgement, and imported vouchers matched by the mapping tables. \\
+M8 to M2 and M4 & Import sales, returns, purchases and stock from Tally
+& Voucher data and mapping tables & Sale, ledger and stock rows with
+source = tally\_import; an unmatched party or item goes to Sync Issues
+and no WhatsApp message is sent. \\
+M11 to M2 to M6 & Read-only report queries & Date range and filters &
+Totals and lists; never writes. \\
+\end{longtable}
+
+\subsection{Cohesion Analysis}\label{cohesion-analysis}
+
+\begin{quote}
+Table 8.4 explains why the tasks inside the main modules belong
+together.
+
+\emph{Table 8.4: Cohesion of selected modules}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.2099}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3204}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.4696}}@{}}
+\toprule\noalign{}
+\textbf{Module} & \textbf{Tasks inside it} & \textbf{Why this has high cohesion} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{M1 Access, Audit and Settings} & Login, token, roles, permission
+check, 2FA, audit log, settings. & Every task answers one question: who
+is this user and what may they do. It has no billing, stock or ledger
+logic, so a change to login rules never touches other modules. \\
+\textbf{M2 Catalog, Stock and Purchasing} & Products, variants, stock
+movements, reservations, stock count, supplier purchases. & Every task
+changes or describes stock. All stock changes are rows of one ledger, so
+stock rules exist in exactly one place. \\
+\textbf{M4 Customers and Khata Ledger} & Customers, khata accounts,
+ledger entries, allocation, ageing, reminder rules. & All tasks work on
+one thing: what a customer owes. Balance, allocation and reversal rules
+are written once; POS and Payments only call this module. \\
+\textbf{M7 WhatsApp Messaging} & Message jobs, templates, validator,
+opt-in, quiet hours, SMS fallback. & Everything that talks to customers
+by message is in one place. If the provider changes, only this module
+changes. \\
+\textbf{M8 Tally Integration} & Outbox and inbox, mapping, voucher
+types, Sync Issues, reconciliation. & All knowledge of Tally and its
+voucher format is kept here. Other modules only write outbox rows and
+never build Tally XML. \\
+\textbf{M9 Employees and Payroll} & Attendance, salary formula,
+advances, recovery, salary run, statement. & All tasks serve one
+purpose: pay staff correctly. The salary formula is defined once and the
+run is locked after owner approval. \\
+\textbf{M10 Fall-Pico} & Job creation, states, tags, QC, rework, worker
+wages, cost. & One life-cycle (PENDING to HANDED\_OVER) and one wage
+rule (payable once at QC\_PASSED). \\
+\end{longtable}
+
+\begin{quote}
+Three main cohesion decisions were taken. First, all khata balance rules
+are in M4, while M3 (POS) and M6 (Payments) only request an entry.
+Second, M9 (monthly salary) and M10 (per-piece fall-pico wages) use the
+same append-only ledger design but are separate modules, because their
+rules differ (salary formula against wage after QC\_PASSED). Third,
+wording by AI (M12) is kept apart from messaging (M7): the AI only
+writes text around placeholders, and the numbers are filled and checked
+by M7 from the database.
+\end{quote}
+
+\subsection{Coupling Analysis}\label{coupling-analysis}
+
+\begin{quote}
+Table 8.5 shows the main connections between modules, whether each is
+needed, and how the coupling was kept low.
+
+\emph{Table 8.5: Coupling between modules and techniques used to reduce
+it}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.1989}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.2431}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.5580}}@{}}
+\toprule\noalign{}
+\textbf{Module connection} & \textbf{Needed? Why?} & \textbf{How coupling is kept low} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Clients to the API & Yes. One public API with token checking. & Clients
+use only REST and JSON in one response format (success, data, error).
+The POS keeps its own local copy and talks to the API only through
+sync. \\
+M3 to M2, M4, M10 & Yes. A bill must change stock and ledger and create
+jobs together. & One transaction in a service function; only ids and
+paise amounts are passed; M3 never reads their tables; the idempotency
+key makes a retry safe. This is the tightest link and is kept on purpose
+for correct money and stock. \\
+M3, M5, M6, M9 to M7 and M8 & Only to notify or sync. & Outbox pattern:
+the sender writes an outbox row and a worker delivers it with retries. A
+WhatsApp or Tally outage never blocks a sale and no sale is lost. \\
+M7 to M12 (AI) & Only for wording. & Separate service with 3 s timeout
+and a standard-template fallback. Amounts always come from the database,
+and no personal data is sent to the model. \\
+M6 to Razorpay, M7 to WhatsApp provider & Yes. & Provider code sits in
+app/integrations behind small client functions; a provider can be
+replaced without changing the modules. Webhooks are signature-verified
+and idempotent. \\
+M8 to the Tally agent & Yes. & The agent makes outbound HTTPS calls
+only, with its own API key. Tally is never opened to the internet. Each
+voucher has a unique reference, so a retry cannot duplicate it. \\
+M9 and M10 & No direct link. & Separate tables and rules. They share
+only the design of an append-only ledger, not code or data. \\
+M5 to M10 & Weakly (pack check). & M5 only asks for the state of the
+jobs of one order. \\
+M11 to other modules & Read only. & Reports never write, so they can be
+changed or removed without affecting billing. \\
+\end{longtable}
+
+\begin{quote}
+General techniques used: modules exchange ids, paise amounts and small
+payloads, not internal objects; money, stock and ledger tables are
+append-only; shared packages hold only types and configuration.
+
+\textbf{Known remaining coupling.} All modules share one PostgreSQL
+database, and some tables refer to others by id (for example bills to
+customers). M11 reads tables of several modules. M3, M2, M4 and M10 must
+be deployed together because they share one transaction. This is
+accepted for the modular monolith chosen in the SRS; a later improvement
+is to let M11 read through database views and to split modules into
+services only if the shop grows.
+\end{quote}
+
+\subsection{Design Review Checklist}\label{design-review-checklist}
+
+\begin{quote}
+\emph{Table 8.6: Design review checklist for Experiment 8}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.6409}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.3591}}@{}}
+\toprule\noalign{}
+\textbf{Review item} & \textbf{Status} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Every important requirement belongs to at least one module. & Satisfied
+(Table 8.2) \\
+Every module has a clear purpose. & Satisfied (Tables 8.2 and 8.4) \\
+Diagram matches the module table. & Satisfied (Figure 8.1) \\
+Interfaces show inputs and outputs. & Satisfied (Table 8.3) \\
+Unnecessary direct dependencies are avoided. & Satisfied (Table 8.5) \\
+Remaining coupling is stated honestly. & Satisfied (note after Table
+8.5) \\
+\end{longtable}
+
+\subsection{Results and Discussion}\label{results-and-discussion}
+
+\begin{quote}
+Wereverse was divided into eleven business modules (M1 to M11) plus a
+separate AI service (M12). Every functional requirement is covered by at
+least one module (Table 8.2), and the diagram agrees with the table
+(Figure 8.1). Cohesion is high because each business domain lives in one
+module with one purpose: all khata rules in M4, all Tally knowledge in
+M8, all salary rules in M9. Coupling is low because modules exchange
+only ids and small payloads, slow or unreliable work (WhatsApp, Tally,
+AI) is decoupled through the outbox, timeouts and fallbacks, and every
+provider sits behind its own integration code. The review also shows the
+coupling that remains by design: the shared database and the single
+transaction of a bill.
+\end{quote}
+
+\subsection{Conclusion}\label{conclusion-7}
+
+\begin{quote}
+Wereverse was divided into twelve modules with defined interfaces, and
+the design was justified through cohesion and coupling. A good modular
+design places each business domain in one module and lets modules
+communicate through small, well-defined interfaces. The few strong
+links, such as the bill transaction, are kept on purpose where
+correctness of money and stock matters.
+\end{quote}
+
+\clearpage
+\section{LAB EXPERIMENT 9}\label{lab-experiment-9}
+
+\subsection{Functional Test Case
+Design}\label{functional-test-case-design}
+
+\begin{quote}
+\textbf{Aim}
+
+To design functional test cases for selected Wereverse requirements,
+write clear expected results, and link each test case to its
+requirement.
+\end{quote}
+
+\subsection{Background}\label{background-1}
+
+\begin{quote}
+\textbf{Functional testing} checks whether the software behaves as its
+requirements state, by giving inputs and comparing the observed output
+with the expected output. A \textbf{test case} has a unique ID, the
+requirement it checks, the input or precondition, the steps, the
+expected result and, after execution, the actual result and status. A
+\textbf{positive test} uses valid input and expects normal behaviour; a
+\textbf{negative test} uses invalid input and expects correct rejection.
+\textbf{Boundary value testing} checks values at or just beyond a limit,
+where errors are most common. A \textbf{traceability matrix} links every
+requirement to its tests, so that no requirement is left untested.
+
+\textbf{Stage of this experiment.} Wereverse is at the design stage and
+has no running build yet. The test cases and their expected results are
+therefore designed from the SRS (module notes in section 5, error codes
+in section 8.2 and the worked examples of the test plan in section 13).
+The Actual result and Status columns are prepared for the day the tests
+are run; no execution result is claimed in this report.
+\end{quote}
+
+\subsection{Requirements Selected for
+Testing}\label{requirements-selected-for-testing}
+
+\begin{quote}
+\emph{Table 9.1: Requirements selected for testing}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.0994}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.6188}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.2818}}@{}}
+\toprule\noalign{}
+\textbf{Req. ID} & \textbf{Functional requirement in simple words} & \textbf{SRS reference} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{R-01} & A user can log in with valid credentials; wrong or
+missing data is rejected; protected APIs need a valid token and the
+right role. & FR-AUT; SRS 8.2, 12.1; test T29 \\
+\textbf{R-02} & A khata sale is allowed within the
+customer\textquotesingle s credit limit, blocked above it, and can be
+approved by a manager; a repeated bill is not created twice. & FR-KHT,
+FR-POS; SRS 5.3, 8.4; tests T02, T06, T07 \\
+\textbf{R-03} & Salary is calculated by the SRS formula; advances above
+the limit need owner approval; salary data is visible only to allowed
+roles; an approved run is locked. & FR-EMP; SRS 5.7; tests T19, T20,
+T21 \\
+\textbf{R-04} & A fall-pico job is created only for an eligible saree
+priced above the limit; rework is not paid twice; an online saree is not
+packed before QC. & FR-FPC; SRS 5.8; tests T22, T23, T24 \\
+\end{longtable}
+
+\subsection{Test Data and Assumptions}\label{test-data-and-assumptions}
+
+\begin{quote}
+The rules below are taken from the SRS. Test accounts and amounts are
+test data chosen by the group; anything the SRS leaves open is marked as
+an assumption.
+\end{quote}
+
+\begin{itemize}
+\item
+  \textbf{Environment:} staging system with test data; API base /api/v1;
+  protected calls carry Authorization: Bearer token; money is stored in
+  paise and shown here in rupees; errors use the codes of SRS section
+  8.2.
+\item
+  \textbf{Accounts:} one test cashier, test manager, test owner and test
+  employee.
+\item
+  \textbf{Khata test customer:} credit limit Rs. 10,000 and current
+  balance Rs. 8,000.
+\item
+  \textbf{Credit limit boundary:} the POS warns when the limit is
+  crossed. A bill that takes the balance exactly to the limit is treated
+  as allowed {[}Assumption: the limit is inclusive; to be confirmed with
+  the client{]}.
+\item
+  \textbf{Payroll:} payable days = present + half-day x 0.5 + paid leave
+  + weekly off; monthly staff earned = salary x payable days / days in
+  month; gross = earned + incentive + overtime; net = gross - advance
+  recovery - other deductions; pending = net - salary already paid (SRS
+  5.7).
+\item
+  \textbf{Fall-pico:} a job is created for each saree with
+  fall\_pico\_eligible = true and a price above the limit (setting,
+  default Rs. 1,000). Whether the limit applies before or after discount
+  is an open decision in the SRS, so the tests use bills without
+  discount. Worker rate used in the test: Rs. 60 per piece.
+\end{itemize}
+
+\subsection{Test Case Register}\label{test-case-register}
+
+\begin{quote}
+Table 9.2 contains 20 test cases with positive and negative cases and
+boundary values. The expected results were written from the SRS rules.
+
+\emph{Table 9.2: Test case register of Wereverse}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.1050}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2099}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.3149}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.3702}}@{}}
+\toprule\noalign{}
+\textbf{Test ID / Req.} & \textbf{Scenario and type} & \textbf{Test input / precondition} & \textbf{Expected result} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+TC-01 R-01 & Valid staff login (Positive) & POST /auth/login with the
+test cashier\textquotesingle s correct credentials. & HTTP 200, success =
+true; token returned; user role = Cashier; error = null. \\
+TC-02 R-01 & Wrong password (Negative) & Test cashier\textquotesingle s
+username with a wrong password. & HTTP 401 UNAUTHORIZED; no token
+issued. \\
+TC-03 R-01 & Missing password (Negative) & Username only; password
+field not sent. & HTTP 400 VALIDATION\_ERROR; no token issued. \\
+TC-04 R-01 & Protected API without token (Negative) & GET
+/khata/accounts/:id/ledger with no Authorization header. & HTTP 401
+UNAUTHORIZED; no ledger data returned. \\
+TC-05 R-01 & Cashier tries a write-off (Negative, role check) &
+Logged-in cashier calls POST /khata/accounts/:id/adjustments (owner
+only). & HTTP 403 FORBIDDEN; no ledger entry is created. \\
+TC-06 R-02 & Khata sale within limit (Positive) & Customer limit Rs.
+10,000, balance Rs. 8,000. POST /pos/bills with a bill of Rs. 1,500
+(150000 paise) fully on khata. & Bill saved; SALE ledger entry of 150000
+paise; new balance Rs. 9,500 (950000 paise); WhatsApp job and Tally
+outbox row queued. \\
+TC-07 R-02 & Sale exactly at the limit (Boundary) & Same customer; bill
+of Rs. 2,000 on khata, so the balance becomes exactly Rs. 10,000. & Bill
+accepted; new balance Rs. 10,000 {[}Assumption: limit is
+inclusive{]}. \\
+TC-08 R-02 & Sale crosses the limit (Negative) & Same customer; bill of
+Rs. 3,200 on khata, so the balance would be Rs. 11,200. & HTTP 422
+CREDIT\_LIMIT\_EXCEEDED; message says the limit is crossed by Rs. 1,200
+and manager approval is needed; no bill, ledger entry or stock
+deduction. \\
+TC-09 R-02 & Manager override (Positive) & Same bill as TC-08; manager
+enters the PIN and a reason. & Bill saved; balance Rs. 11,200; override
+logged with approver and reason. \\
+TC-10 R-02 & Same bill sent twice (Negative, idempotency) & POST
+/pos/bills twice with the same idempotency\_key (for example
+C1-26-000123). & Second call returns the same bill\_id and response;
+only one bill and one ledger entry exist; stock is deducted once. \\
+TC-11 R-03 & Monthly salary calculation (Positive) & Salary Rs. 15,000,
+30-day month; attendance: 20 present, 2 half-day, 1 paid leave, 2 weekly
+off; advance Rs. 5,000 with recovery Rs. 1,000; Rs. 6,000 already
+paid. & Payable days 24; earned Rs. 12,000; gross Rs. 12,000; net Rs.
+11,000; pending Rs. 5,000; advance balance falls from Rs. 5,000 to Rs.
+4,000. \\
+TC-12 R-03 & Daily-rate staff with incentive and overtime (Positive) &
+Daily rate Rs. 500; 22 payable days; incentive Rs. 500; overtime Rs.
+300; no advance. & Earned Rs. 11,000; gross Rs. 11,800; net payable Rs.
+11,800. \\
+TC-13 R-03 & Advance above the limit (Negative) & An advance larger than
+the configured advance limit is requested for an employee. & Advance is
+not recorded until the owner approves it. \\
+TC-14 R-03 & Salary access by role (Negative) & Test manager calls the
+salary APIs of an employee; the test employee calls GET /me/statement. &
+Manager: HTTP 403 FORBIDDEN. Employee: sees only their own
+statement. \\
+TC-15 R-03 & Change after approval (Negative) & Owner approves the
+salary run; a salary line is then edited. & Change rejected with a
+business-rule error (HTTP 422); the run stays locked. \\
+TC-16 R-04 & Saree above the limit (Positive, boundary) & Eligible
+saree priced Rs. 1,001, no discount; customer does not decline. & One
+fall-pico job is created in state PENDING and a tag is printed. \\
+TC-17 R-04 & Saree exactly at the limit (Boundary) & Eligible saree
+priced Rs. 1,000, no discount. & No fall-pico job is created. \\
+TC-18 R-04 & Saree not marked eligible (Negative) & Saree priced Rs.
+1,500 with fall\_pico\_eligible = false. & No fall-pico job is
+created. \\
+TC-19 R-04 & QC fail, rework, then pass (Positive) & Job fails QC, goes
+to REWORK, then passes QC; worker rate Rs. 60; 1 piece. & No wage after
+the first failure; wage of Rs. 60 added once at QC\_PASSED; worker
+statement total is Rs. 60. \\
+TC-20 R-04 & Pack online saree before QC (Negative) & Paid online order
+whose saree job is IN\_PROGRESS; staff tries to pack it, then again
+after QC\_PASSED. & First attempt rejected; after QC\_PASSED (or
+skipped) packing is allowed. \\
+\end{longtable}
+
+\subsection{Requirement Traceability
+Check}\label{requirement-traceability-check}
+
+\begin{quote}
+Table 9.3 links each requirement to its test cases and confirms that
+both positive and negative cases exist. Every requirement has at least
+one positive and one negative test, and every test maps to a
+requirement.
+
+\emph{Table 9.3: Requirement traceability matrix}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.1878}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.4641}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.1657}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.1823}}@{}}
+\toprule\noalign{}
+\textbf{Requirement ID} & \textbf{Related test case IDs} & \textbf{Positive case?} & \textbf{Negative case?} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+R-01 & TC-01, TC-02, TC-03, TC-04, TC-05 & Yes & Yes \\
+R-02 & TC-06, TC-07, TC-08, TC-09, TC-10 & Yes & Yes \\
+R-03 & TC-11, TC-12, TC-13, TC-14, TC-15 & Yes & Yes \\
+R-04 & TC-16, TC-17, TC-18, TC-19, TC-20 & Yes & Yes \\
+\end{longtable}
+
+\subsection{Detailed Test Case
+Records}\label{detailed-test-case-records}
+
+\begin{quote}
+Two test cases are recorded in full: TC-08 (a negative case) and TC-11
+(a positive calculation case). Their actual result and status stay open
+until the tests are run.
+
+\emph{Table 9.4: Detailed record of test case TC-08}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.2541}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.7459}}@{}}
+\toprule\noalign{}
+\textbf{Field} & \textbf{Details} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{Test case ID / requirement ID} & TC-08 / R-02 \\
+\textbf{Title and type} & Khata sale that crosses the credit limit -
+Negative \\
+\textbf{Preconditions} & Staging system is running; the test customer
+has a khata account with limit Rs. 10,000 and balance Rs. 8,000; the
+test cashier exists. \\
+\textbf{Test input / test data} & Bill of Rs. 3,200 (320000 paise) paid
+fully by khata; new idempotency\_key. \\
+\textbf{Steps to follow} & 1. Log in as the test cashier with POST
+/auth/login and copy the token. 2. Check the balance and limit with GET
+/khata/accounts/:id/ledger. 3. Send POST /pos/bills with the khata
+payment of 320000 paise and the Bearer token. 4. Read the HTTP status,
+error code and message. 5. Check that no bill, ledger entry or stock
+movement was created. \\
+\textbf{Expected result} & HTTP 422 with code CREDIT\_LIMIT\_EXCEEDED
+and a message that the limit is crossed by Rs. 1,200 and manager
+approval is needed; balance stays Rs. 8,000; stock unchanged. \\
+\textbf{Actual result} & To be recorded when the test is executed. \\
+\textbf{Execution status} & Pending \\
+\end{longtable}
+
+\begin{quote}
+\emph{Table 9.5: Detailed record of test case TC-11}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.2541}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.7459}}@{}}
+\toprule\noalign{}
+\textbf{Field} & \textbf{Details} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{Test case ID / requirement ID} & TC-11 / R-03 \\
+\textbf{Title and type} & Monthly salary calculation with half-day, paid
+leave and advance recovery - Positive \\
+\textbf{Preconditions} & Staging system is running; the test employee
+has a monthly salary of Rs. 15,000 and an advance of Rs. 5,000; the
+month has 30 days. \\
+\textbf{Test input / test data} & Attendance: 20 present, 2 half-day, 1
+paid leave, 2 weekly off. Advance recovery Rs. 1,000. Salary already
+paid Rs. 6,000. No incentive, overtime or other deductions. \\
+\textbf{Steps to follow} & 1. As the test manager (with PIN), enter the
+attendance with POST /employees/:id/attendance. 2. As the test owner,
+record the advance recovery and the salary payment of Rs. 6,000 with
+POST /employees/:id/salary-payments. 3. Create the salary run with POST
+/payroll/runs. 4. Read payable days, earned, gross, net payable, pending
+and advance balance. \\
+\textbf{Expected result} & Payable days 24 (20 + 2 x 0.5 + 1 + 2);
+earned Rs. 12,000 (15,000 x 24 / 30); gross Rs. 12,000; net payable Rs.
+11,000; pending Rs. 5,000; advance balance Rs. 4,000. \\
+\textbf{Actual result} & To be recorded when the test is executed. \\
+\textbf{Execution status} & Pending \\
+\end{longtable}
+
+\subsection{Execution Log}\label{execution-log}
+
+\begin{quote}
+Table 9.6 is the log that will be filled in when the tests are run on
+the staging system.
+
+\emph{Table 9.6: Execution log of all test cases}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.1105}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.4751}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.1657}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2486}}@{}}
+\toprule\noalign{}
+\textbf{Test ID} & \textbf{Actual result observed} & \textbf{Status} & \textbf{Date and tester} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+TC-01 & & Pending & \\
+TC-02 & & Pending & \\
+TC-03 & & Pending & \\
+TC-04 & & Pending & \\
+TC-05 & & Pending & \\
+TC-06 & & Pending & \\
+TC-07 & & Pending & \\
+TC-08 & & Pending & \\
+TC-09 & & Pending & \\
+TC-10 & & Pending & \\
+TC-11 & & Pending & \\
+TC-12 & & Pending & \\
+TC-13 & & Pending & \\
+TC-14 & & Pending & \\
+TC-15 & & Pending & \\
+TC-16 & & Pending & \\
+TC-17 & & Pending & \\
+TC-18 & & Pending & \\
+TC-19 & & Pending & \\
+TC-20 & & Pending & \\
+\end{longtable}
+
+\subsection{Review Checklist}\label{review-checklist}
+
+\begin{quote}
+\emph{Table 9.7: Review checklist for Experiment 9}
+\end{quote}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5967}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.4033}}@{}}
+\toprule\noalign{}
+\textbf{Review item} & \textbf{Status} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Every test has a unique ID. & Satisfied (Table 9.2) \\
+Every test maps to a requirement. & Satisfied (Table 9.3) \\
+Both valid and invalid cases are included. & Satisfied (Table 9.2) \\
+Expected results are clear. & Satisfied (Tables 9.2, 9.4 and 9.5) \\
+Steps can be repeated by another person. & Satisfied for the two
+detailed records (Tables 9.4 and 9.5) \\
+All rules match the SRS; open points are marked. & Satisfied (Test Data
+and Assumptions) \\
+Tests have been executed. & Not yet: build pending (Table 9.6 is
+ready) \\
+\end{longtable}
+
+\subsection{Results and Discussion}\label{results-and-discussion-1}
+
+\begin{quote}
+Twenty functional test cases were designed for four Wereverse
+requirements: login and access control, khata credit limit, salary
+calculation and fall-pico jobs. Each test is linked to a requirement and
+every requirement has positive and negative tests (Table 9.3). Boundary
+values were chosen where the SRS gives a limit: a sale that ends exactly
+at the credit limit and one that crosses it, a saree priced Rs. 1,000
+against Rs. 1,001, and 24 payable days from mixed attendance. The worked
+salary example of the SRS (net Rs. 11,000, pending Rs. 5,000, advance
+Rs. 4,000) is used as the expected result of TC-11.
+
+Three points need a decision from the client: whether the credit limit
+is inclusive (TC-07), whether the fall-pico limit applies before or
+after discount (TC-16, TC-17), and the value of the advance limit
+(TC-13). They are marked as assumptions and do not change the structure
+of the tests.
+\end{quote}
+
+\clearpage
+\section{OVERALL CONCLUSION}\label{overall-conclusion}
+
+\begin{quote}
+Through Experiments 1 to 9 we carried Wereverse from a business problem
+to a complete design and a test plan. Requirements analysis (Experiment
+1) set out what the shop needs and which qualities are non-negotiable:
+billing that never stops, exact money, one shared stock and Tally books
+that always match. Choosing an incremental process model (Experiment 2)
+let us plan a rollout that keeps the live shop running while each module
+is introduced and tested.
+
+The UML diagrams each answered a different question. The use case
+diagram showed who uses the system and for what; the class diagram fixed
+the domain model and its rules; sequence diagrams exposed transaction
+boundaries and the outbox pattern; activity and state chart diagrams
+captured workflows and life cycles; and the ER and deployment diagrams
+turned the design into storage and infrastructure. Modular design
+(Experiment 8) divided the system into cohesive modules with small
+interfaces and low coupling, and the functional test cases
+(Experiment 9) closed the loop back to the requirements.
+
+We learned that careful requirements and design work catches the hardest
+problems (duplicate vouchers, offline conflicts, wrong amounts in
+messages) before any code is written, which is cheaper and safer than
+fixing them in production.
+\end{quote}
+
+\clearpage
+\section{REFERENCES}\label{references}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Wereverse Software Requirements Specification (SRS) v1.0 and Complete
+  Project Documentation v1.0 (Draft), 5 October 2026.
+\item
+  I. Sommerville, \emph{Software Engineering}, 10th ed., Pearson, 2016.
+\item
+  R. S. Pressman and B. R. Maxim, \emph{Software Engineering: A
+  Practitioner\textquotesingle s Approach}, 9th ed., McGraw-Hill, 2020.
+\item
+  IEEE Std 830-1998, \emph{IEEE Recommended Practice for Software
+  Requirements Specifications}, IEEE, 1998.
+\item
+  Object Management Group, \emph{Unified Modeling Language (UML)
+  Specification}, Version 2.5.1, 2017.
+\item
+  FastAPI documentation,
+  \href{https://fastapi.tiangolo.com/}{https://fastapi.tiangolo.com}
+\item
+  PostgreSQL documentation, \url{https://www.postgresql.org/docs/}
+\item
+  Tally Solutions, TallyPrime integration (XML/HTTP) documentation,
+  \href{https://help.tallysolutions.com/}{https://help.tallysolutions.com}
+\item
+  Razorpay payment gateway and webhooks documentation,
+  \url{https://razorpay.com/docs/}
+\item
+  Meta, WhatsApp Business Platform documentation,
+  \url{https://developers.facebook.com/docs/whatsapp}
+\end{enumerate}
+
+\end{document}

@@ -97,7 +97,7 @@ export default function BackofficeDashboard() {
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 bg-white px-5 py-4 md:px-8">
           <div>
             <p className="text-xs text-gray-500">
-              Sethi Fashion / Workspace
+              WearVerse / Workspace
             </p>
             <h2 className="mt-1 text-xl font-semibold">
               Dashboard
@@ -316,7 +316,7 @@ export default function BackofficeDashboard() {
           </section>
 
           <footer className="border-t border-gray-200 pt-5 text-xs text-gray-500">
-            FashionOS · Owner workspace · Sample dashboard data
+            WearVerse · Owner workspace · Sample dashboard data
           </footer>
         </div>
       </main>

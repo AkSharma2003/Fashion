@@ -19,12 +19,12 @@ export default function BackofficeLayout() {
       <aside className="flex w-full shrink-0 flex-col bg-[#111111] text-white md:min-h-screen md:w-64">
         <div className="flex items-center gap-3 border-b border-white/10 px-6 py-6">
           <div className="flex h-10 w-10 items-center justify-center bg-white text-lg font-bold text-black">
-            F
+            W
           </div>
 
           <div>
             <h1 className="text-lg font-semibold tracking-wide">
-              FashionOS
+              WearVerse
             </h1>
             <p className="text-xs text-gray-400">Owner workspace</p>
           </div>
@@ -59,9 +59,9 @@ export default function BackofficeLayout() {
         </div>
 
         <div className="mt-auto hidden border-t border-white/10 p-5 md:block">
-          <p className="text-sm font-medium">Sethi Fashion</p>
+          <p className="text-sm font-medium">WearVerse</p>
           <p className="mt-1 text-xs text-gray-400">
-            Store management
+            WearVerse store management
           </p>
 
           <div className="mt-4 flex items-center gap-2 text-xs text-gray-400">
@@ -75,10 +75,10 @@ export default function BackofficeLayout() {
         <header className="flex items-center justify-between gap-4 border-b border-gray-200 bg-white px-5 py-4 md:px-8">
           <div>
             <p className="text-xs text-gray-500">
-              Sethi Fashion / Workspace
+              WearVerse / Workspace
             </p>
             <h2 className="mt-1 text-xl font-semibold">
-              FashionOS Backoffice
+              WearVerse Backoffice
             </h2>
           </div>
 
@@ -94,4 +94,3 @@ export default function BackofficeLayout() {
     </div>
   );
 }
-

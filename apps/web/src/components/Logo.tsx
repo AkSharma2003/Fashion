@@ -5,7 +5,7 @@ function Logo() {
     <div className="shrink-0">
       <img
         src={logo}
-        alt="FashionOS"
+        alt="WearVerse"
         className="
           block
           w-12 h-12

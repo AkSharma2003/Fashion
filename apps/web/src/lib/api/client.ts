@@ -37,7 +37,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
       headers,
     });
   } catch {
-    throw new ApiError("Could not connect to FashionOS API. Check that the backend is running.", 0);
+    throw new ApiError("Could not connect to WearVerse API. Check that the backend is running.", 0);
   }
 
   const contentType = response.headers.get("content-type") ?? "";
