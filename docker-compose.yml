@@ -1,7 +1,10 @@
+# `docker compose up -d` starts the databases only (local development).
+# `docker compose --profile app up -d --build` also runs the API, worker and AI service.
 services:
   db:
     image: pgvector/pgvector:pg16
     environment:
+      # Kept as "fashionos" so existing local volumes keep working after the WearVerse rename.
       POSTGRES_USER: fashionos
       POSTGRES_PASSWORD: fashionos
       POSTGRES_DB: fashionos
@@ -25,5 +28,55 @@ services:
       - "1025:1025"
       - "8025:8025"
 
+  api:
+    profiles: ["app"]
+    build: ./apps/api
+    env_file: ./apps/api/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://fashionos:fashionos@db:5432/fashionos
+      REDIS_URL: redis://redis:6379/0
+      AI_SERVICE_URL: http://ai:8001
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    profiles: ["app"]
+    build: ./apps/worker
+    env_file: ./apps/api/.env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      API_INTERNAL_URL: http://api:8000/api/v1/internal
+    depends_on: [api, redis]
+
+  ai:
+    profiles: ["app"]
+    build: ./apps/ai-service
+    env_file: ./apps/api/.env
+    ports:
+      - "8001:8001"
+
+  web:
+    # Production-style web server: serves apps/web/dist, proxies /api, SEO pages for bots.
+    # Build the site first: pnpm build:web
+    profiles: ["app"]
+    image: caddy:2-alpine
+    environment:
+      WEARVERSE_DOMAIN: ${WEARVERSE_DOMAIN:-localhost}
+    volumes:
+      - ./infrastructure/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./apps/web/dist:/srv/web:ro
+      - caddydata:/data
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on: [api]
+
 volumes:
   pgdata:
+  caddydata:

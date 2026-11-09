@@ -14,11 +14,11 @@ OTP_MAX_ATTEMPTS = 5
 
 
 def _otp_key(phone_number: str) -> str:
-    return f"fashionos:staff-otp:code:{phone_number.strip()}"
+    return f"wearverse:staff-otp:code:{phone_number.strip()}"
 
 
 def _attempts_key(phone_number: str) -> str:
-    return f"fashionos:staff-otp:attempts:{phone_number.strip()}"
+    return f"wearverse:staff-otp:attempts:{phone_number.strip()}"
 
 
 def generate_staff_otp() -> str:

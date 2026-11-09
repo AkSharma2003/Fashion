@@ -1,10 +1,11 @@
-import { getAccessToken } from "../auth/session";
+import { clearSession, getAccessToken, getRefreshToken, setAccessToken } from "../auth/session";
 
 const BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 export class ApiError extends Error {
   status: number;
   code?: string;
+  extra?: Record<string, unknown>;
 
   constructor(message: string, status: number, code?: string) {
     super(message);
@@ -14,8 +15,32 @@ export class ApiError extends Error {
   }
 }
 
-/** Calls the FastAPI API and returns its raw JSON response. Throws on non-2xx responses. */
-export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+let refreshing: Promise<boolean> | null = null;
+
+async function tryRefresh(): Promise<boolean> {
+  const refresh = getRefreshToken();
+  if (!refresh) return false;
+  refreshing ??= fetch(`${BASE}/api/v1/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: refresh }),
+  })
+    .then(async (r) => {
+      if (!r.ok) return false;
+      const body = (await r.json()) as { access_token?: string };
+      if (body.access_token) setAccessToken(body.access_token);
+      return Boolean(body.access_token);
+    })
+    .catch(() => false)
+    .finally(() => {
+      refreshing = null;
+    });
+  return refreshing;
+}
+
+/** Calls the FastAPI API and returns its raw JSON response. Throws on non-2xx responses.
+ *  A 401 with a stored refresh token is retried once after refreshing the access token. */
+export async function api<T>(path: string, init: RequestInit = {}, retried = false): Promise<T> {
   const token = getAccessToken();
   const headers = new Headers(init.headers);
 
@@ -45,14 +70,27 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     ? await response.json().catch(() => null)
     : await response.text().catch(() => "");
 
+  if (response.status === 401 && !retried && token) {
+    if (await tryRefresh()) return api<T>(path, init, true);
+    clearSession();
+  }
+
   if (!response.ok) {
-    const body = payload as { detail?: unknown; message?: unknown; code?: unknown } | null;
-    const detail = typeof body?.detail === "string"
-      ? body.detail
-      : typeof body?.message === "string"
-        ? body.message
-        : `Request failed (${response.status})`;
-    throw new ApiError(detail, response.status, typeof body?.code === "string" ? body.code : undefined);
+    const body = payload as {
+      detail?: unknown; message?: unknown; code?: unknown;
+      error?: { code?: string; message?: string; [k: string]: unknown };
+    } | null;
+    const detail = typeof body?.error?.message === "string"
+      ? body.error.message
+      : typeof body?.detail === "string"
+        ? body.detail
+        : typeof body?.message === "string"
+          ? body.message
+          : `Request failed (${response.status})`;
+    const code = body?.error?.code ?? (typeof body?.code === "string" ? body.code : undefined);
+    const err = new ApiError(detail, response.status, code);
+    err.extra = body?.error;
+    throw err;
   }
 
   return payload as T;
@@ -235,4 +273,23 @@ export async function deactivateProductVariant(
       method: "DELETE",
     },
   );
+}
+
+
+/** New WearVerse endpoints answer {success, data, error}. This returns `data`. */
+export async function apiData<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const body = await api<{ success: boolean; data: T }>(path, init);
+  return body.data;
+}
+
+export function post<T>(path: string, body?: unknown): Promise<T> {
+  return apiData<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
+}
+
+export function patch<T>(path: string, body: unknown): Promise<T> {
+  return apiData<T>(path, { method: "PATCH", body: JSON.stringify(body) });
+}
+
+export function errorMessage(err: unknown, fallback = "Something went wrong."): string {
+  return err instanceof Error ? err.message : fallback;
 }

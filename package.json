@@ -1,11 +1,15 @@
 {
-  "name": "fashionos",
+  "name": "wearverse",
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "dev:web": "pnpm --filter @fashionos/web dev",
-    "build:web": "pnpm --filter @fashionos/web build",
+    "dev:web": "pnpm --filter @wearverse/web dev",
+    "build:web": "pnpm --filter @wearverse/web build",
     "dev:api": "cd apps/api && uvicorn app.main:app --reload --port 8000",
-    "test:api": "cd apps/api && pytest"
+    "test:api": "cd apps/api && pytest",
+    "dev:worker": "cd apps/worker && celery -A app.celery_app worker -B --loglevel=info",
+    "dev:ai": "cd apps/ai-service && uvicorn app.main:app --reload --port 8001",
+    "db:migrate": "cd apps/api && alembic upgrade head",
+    "db:seed": "cd apps/api && python -m scripts.seed --demo"
   }
 }

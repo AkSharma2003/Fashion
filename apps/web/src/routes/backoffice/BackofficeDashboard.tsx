@@ -1,325 +1,80 @@
+import { Link } from "react-router-dom";
+import { Alert, Badge, Button, Card, Loading, Money, Page, Stat, Table } from "../../components/ui";
+import { apiData, post } from "../../lib/api/client";
+import { useApi } from "../../lib/hooks/useApi";
+import { formatDate, formatINR } from "../../lib/money";
 
-import { useNavigate } from "react-router-dom";
-
-const stats = [
-  {
-    label: "Today's Sales",
-    value: "₹24,850",
-    note: "Demo data",
-    icon: "↗",
-  },
-  {
-    label: "Collections",
-    value: "₹12,400",
-    note: "Demo data",
-    icon: "₹",
-  },
-  {
-    label: "Khata Outstanding",
-    value: "₹1,48,500",
-    note: "Amount to collect",
-    icon: "◷",
-  },
-  {
-    label: "Total Orders",
-    value: "38",
-    note: "Today's orders",
-    icon: "▤",
-  },
-];
-
-const orders = [
-  {
-    id: "#FS-1024",
-    customer: "Priya Sharma",
-    item: "Banarasi Saree",
-    amount: "₹4,500",
-    status: "Delivered",
-  },
-  {
-    id: "#FS-1023",
-    customer: "Neha Patel",
-    item: "Ladies Suit",
-    amount: "₹2,200",
-    status: "Processing",
-  },
-  {
-    id: "#FS-1022",
-    customer: "Aarav Shah",
-    item: "Kids Wear",
-    amount: "₹1,250",
-    status: "Pending",
-  },
-  {
-    id: "#FS-1021",
-    customer: "Kavita Sethi",
-    item: "Silk Saree",
-    amount: "₹6,800",
-    status: "Delivered",
-  },
-];
-
-const stockAlerts = [
-  { name: "Banarasi Saree", detail: "SKU: SAR-104", stock: 2 },
-  { name: "Cotton Suit", detail: "SKU: SUIT-028", stock: 4 },
-  { name: "Kids Party Wear", detail: "SKU: KID-016", stock: 3 },
-];
-
-const quickActions = [
-  {
-    title: "Manage Khata",
-    desc: "Customer balances and payments",
-    path: "/backoffice/khata",
-  },
-  {
-    title: "Add product",
-    desc: "Update your product catalogue",
-    path: "/backoffice/products",
-  },
-  {
-    title: "View customers",
-    desc: "Customer details and history",
-    path: null,
-  },
-  {
-    title: "Sales reports",
-    desc: "Review your store performance",
-    path: null,
-  },
-];
+type Dashboard = {
+  today: { shop_sales_paise: number; bills: number; online_sales_paise: number; online_orders: number;
+    collections_paise: number; by_mode: Record<string, number> };
+  khata_outstanding_paise: number; orders_to_pack: number; fall_pico_open: number; fall_pico_late: number;
+  low_stock_variants: number; tally_backlog: number; sync_issues: number;
+  alerts: { id: string; kind: string; severity: string; message: string; created_at: string }[];
+  recent_bills: { id: string; bill_no: string; total_paise: number; source: string; created_at: string }[];
+};
 
 export default function BackofficeDashboard() {
-  const navigate = useNavigate();
+  const { data, error, loading, reload } = useApi(() => apiData<Dashboard>("/reports/dashboard"));
 
   return (
-    <div className="min-h-screen bg-[#F7F7F7] text-[#111111]">
-      <main className="min-w-0 flex-1">
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 bg-white px-5 py-4 md:px-8">
-          <div>
-            <p className="text-xs text-gray-500">
-              WearVerse / Workspace
-            </p>
-            <h2 className="mt-1 text-xl font-semibold">
-              Dashboard
-            </h2>
+    <Page title="Today at the shop" crumb="Dashboard" actions={<Button variant="secondary" onClick={() => void reload()}>Refresh</Button>}>
+      {loading && !data && <Loading />}
+      <Alert>{error}</Alert>
+      {data && (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <Stat label="Shop sales" value={formatINR(data.today.shop_sales_paise)} note={`${data.today.bills} bills`} />
+            <Stat label="Website sales" value={formatINR(data.today.online_sales_paise)} note={`${data.today.online_orders} orders placed`} />
+            <Stat label="Khata collected today" value={formatINR(data.today.collections_paise)} tone="good" />
+            <Stat label="Khata outstanding" value={formatINR(data.khata_outstanding_paise)} tone="warn" note="Amount to collect" />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <Link to="/backoffice/online-orders"><Stat label="Orders to pack" value={data.orders_to_pack} /></Link>
+            <Link to="/backoffice/fall-pico"><Stat label="Fall-pico open" value={data.fall_pico_open}
+              note={data.fall_pico_late ? `${data.fall_pico_late} late` : "none late"} tone={data.fall_pico_late ? "bad" : undefined} /></Link>
+            <Link to="/backoffice/inventory"><Stat label="Low stock (≤1 left)" value={data.low_stock_variants} tone={data.low_stock_variants ? "warn" : undefined} /></Link>
+            <Link to="/backoffice/tally"><Stat label="Tally waiting / issues" value={`${data.tally_backlog} / ${data.sync_issues}`}
+              tone={data.sync_issues ? "bad" : data.tally_backlog ? "warn" : "good"} /></Link>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="hidden text-xs text-gray-500 sm:block">
-              Demo dashboard
-            </span>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#111111] text-sm font-semibold text-white">
-              AK
-            </div>
+          <div className="grid gap-6 xl:grid-cols-2">
+            <Card title="Alerts">
+              {data.alerts.length === 0 ? <p className="text-sm text-gray-500">No open alerts.</p> : (
+                <ul className="space-y-3">
+                  {data.alerts.map((a) => (
+                    <li key={a.id} className="flex items-start justify-between gap-3 border-b border-gray-100 pb-3 last:border-0">
+                      <div>
+                        <Badge tone={a.severity === "critical" ? "bad" : "warn"}>{a.kind}</Badge>
+                        <p className="mt-1 text-sm">{a.message}</p>
+                        <p className="text-xs text-gray-500">{formatDate(a.created_at, true)}</p>
+                      </div>
+                      <Button variant="secondary" onClick={async () => { await post(`/reports/alerts/${a.id}/resolve`); void reload(); }}>Done</Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+            <Card title="Today by payment mode">
+              {Object.keys(data.today.by_mode).length === 0 ? <p className="text-sm text-gray-500">No bills yet today.</p> : (
+                <ul className="space-y-2 text-sm">
+                  {Object.entries(data.today.by_mode).map(([mode, amount]) => (
+                    <li key={mode} className="flex justify-between"><span>{mode}</span><Money paise={amount} /></li>
+                  ))}
+                </ul>
+              )}
+            </Card>
           </div>
-        </header>
 
-        <div className="space-y-7 p-5 md:p-8">
-          {/* Welcome */}
-          <section className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-sm text-gray-500">
-                Friday, October 9, 2026
-              </p>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
-                Good morning, Ankit
-              </h1>
-              <p className="mt-2 text-sm text-gray-500">
-                Here is what's happening with your store today.
-              </p>
-            </div>
-
-            <button
-              onClick={() =>
-                alert("Create order feature abhi implement karna baaki hai.")
-              }
-              className="rounded-md bg-[#111111] px-5 py-3 text-sm font-medium text-white transition hover:bg-gray-800"
-            >
-              + Create order
-            </button>
-          </section>
-
-          {/* Statistics */}
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {stats.map((stat) => (
-              <article
-                key={stat.label}
-                className="rounded-lg border border-gray-200 bg-white p-5"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm text-gray-500">
-                    {stat.label}
-                  </p>
-                  <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[#F2F2F2] text-lg">
-                    {stat.icon}
-                  </span>
-                </div>
-
-                <p className="mt-5 text-2xl font-semibold tracking-tight">
-                  {stat.value}
-                </p>
-
-                <p className="mt-2 text-xs text-gray-500">
-                  {stat.note}
-                </p>
-              </article>
-            ))}
-          </section>
-
-          {/* Orders and stock */}
-          <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-            {/* Recent orders */}
-            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white xl:col-span-2">
-              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-5">
-                <div>
-                  <h3 className="font-semibold">Recent orders</h3>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Latest store activity · Demo data
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => navigate("/backoffice/online-orders")}
-                  className="text-sm font-medium underline underline-offset-4"
-                >
-                  View all
-                </button>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[620px] text-left text-sm">
-                  <thead className="bg-[#F7F7F7] text-xs text-gray-500">
-                    <tr>
-                      <th className="px-5 py-3 font-medium">Order</th>
-                      <th className="px-5 py-3 font-medium">Customer</th>
-                      <th className="px-5 py-3 font-medium">Item</th>
-                      <th className="px-5 py-3 font-medium">Amount</th>
-                      <th className="px-5 py-3 font-medium">Status</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {orders.map((order) => (
-                      <tr
-                        key={order.id}
-                        className="border-t border-gray-100"
-                      >
-                        <td className="px-5 py-4 font-medium">
-                          {order.id}
-                        </td>
-                        <td className="px-5 py-4">
-                          {order.customer}
-                        </td>
-                        <td className="px-5 py-4 text-gray-600">
-                          {order.item}
-                        </td>
-                        <td className="px-5 py-4 font-medium">
-                          {order.amount}
-                        </td>
-                        <td className="px-5 py-4">
-                          <span
-                            className={`inline-block rounded-full px-2.5 py-1 text-xs ${
-                              order.status === "Delivered"
-                                ? "bg-green-50 text-green-700"
-                                : order.status === "Processing"
-                                  ? "bg-blue-50 text-blue-700"
-                                  : "bg-amber-50 text-amber-700"
-                            }`}
-                          >
-                            {order.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Low stock */}
-            <div className="rounded-lg border border-gray-200 bg-white">
-              <div className="border-b border-gray-100 px-5 py-5">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">Low stock alerts</h3>
-                  <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
-                    {stockAlerts.length} items
-                  </span>
-                </div>
-
-                <p className="mt-1 text-xs text-gray-500">
-                  Products that need attention
-                </p>
-              </div>
-
-              <div className="divide-y divide-gray-100 px-5">
-                {stockAlerts.map((item) => (
-                  <div
-                    key={item.name}
-                    className="flex items-center justify-between gap-3 py-4"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">
-                        {item.name}
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        {item.detail}
-                      </p>
-                    </div>
-
-                    <div className="shrink-0 text-right">
-                      <p className="font-semibold">{item.stock}</p>
-                      <p className="text-xs text-gray-500">left</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="px-5 pb-5 pt-3">
-                <button
-                  onClick={() =>
-                    alert("Inventory page ka route App.tsx mein add karna baaki hai.")
-                  }
-                  className="w-full rounded-md border border-gray-300 px-4 py-3 text-sm font-medium transition hover:bg-gray-50"
-                >
-                  Manage inventory
-                </button>
-              </div>
-            </div>
-          </section>
-
-          {/* Quick actions */}
-          <section>
-            <h3 className="font-semibold">Quick actions</h3>
-
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {quickActions.map((action) => (
-                <button
-                  key={action.title}
-                  onClick={() => {
-                    if (action.path) {
-                      navigate(action.path);
-                    } else {
-                      alert(
-                        `${action.title} page ka route abhi configured nahi hai.`,
-                      );
-                    }
-                  }}
-                  className="rounded-lg border border-gray-200 bg-white p-5 text-left transition hover:border-[#111111]"
-                >
-                  <p className="font-medium">{action.title} ↗</p>
-                  <p className="mt-2 text-sm text-gray-500">
-                    {action.desc}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <footer className="border-t border-gray-200 pt-5 text-xs text-gray-500">
-            WearVerse · Owner workspace · Sample dashboard data
-          </footer>
-        </div>
-      </main>
-    </div>
+          <Card title="Latest bills" actions={<Link className="text-sm underline" to="/backoffice/bills">All bills</Link>}>
+            <Table rows={data.recent_bills} rowKey={(b) => b.id} empty="No bills yet." columns={[
+              { key: "no", label: "Bill", render: (b) => <span className="font-medium">{b.bill_no}</span> },
+              { key: "src", label: "Made in", render: (b) => <Badge>{b.source === "tally_import" ? "Tally" : "POS"}</Badge> },
+              { key: "at", label: "Time", render: (b) => formatDate(b.created_at, true) },
+              { key: "total", label: "Total", align: "right", render: (b) => <Money paise={b.total_paise} /> },
+            ]} />
+          </Card>
+        </>
+      )}
+    </Page>
   );
 }

@@ -169,3 +169,7 @@ export function removeFromCart(
     ),
   );
 }
+
+export function clearCart() {
+  saveCart([]);
+}

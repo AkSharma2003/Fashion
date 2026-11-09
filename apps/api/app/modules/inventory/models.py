@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -30,6 +31,11 @@ class ProductVariant(Base):
     sku: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     size: Mapped[str | None] = mapped_column(String(50), nullable=True)
     color: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # Price of this variant (GST inclusive). NULL = use the product's selling price.
+    price_paise: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    mrp_paise: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cost_paise: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true", nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -52,10 +58,11 @@ class Barcode(Base):
 
 class StockLevel(Base):
     __tablename__ = "stock_levels"
+    # on_hand may go below zero: an offline shop sale that already happened is accepted
+    # and raises a Stock Conflict alert instead (SRS 5.1). Website orders can never oversell
+    # because reserve() checks on_hand - reserved inside a row lock.
     __table_args__ = (
-        CheckConstraint("on_hand >= 0", name="ck_stock_levels_on_hand_nonnegative"),
         CheckConstraint("reserved >= 0", name="ck_stock_levels_reserved_nonnegative"),
-        CheckConstraint("reserved <= on_hand", name="ck_stock_levels_reserved_lte_on_hand"),
         UniqueConstraint("variant_id", name="uq_stock_levels_variant"),
     )
 
@@ -92,6 +99,9 @@ class StockMovement(Base):
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     reference_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
     reference_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # pos | website | tally_import | purchase | adjustment | return
+    source: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

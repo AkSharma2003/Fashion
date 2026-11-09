@@ -61,6 +61,18 @@ class Product(Base):
         nullable=False,
     )
 
+    mrp_paise: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Fixed GST rate in basis points (500 = 5%). NULL = use the apparel slabs from settings.
+    gst_rate_bp: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    hsn_code: Mapped[str | None] = mapped_column(String(16), nullable=True)
+
+    # Sarees that can get fall-pico (SRS FR-FPC).
+    fall_pico_eligible: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false", nullable=False,
+    )
+
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,

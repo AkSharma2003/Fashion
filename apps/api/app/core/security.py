@@ -74,3 +74,9 @@ def create_refresh_token(user_id: str, role_id: str) -> str:
         settings.jwt_secret,
         algorithm="HS256",
     )
+
+def create_customer_token(customer_id: str) -> str:
+    """Website customer login (separate from staff tokens; never accepted by staff routes)."""
+    expire = datetime.now(timezone.utc) + timedelta(days=7)
+    payload = {"sub": customer_id, "type": "customer", "exp": expire}
+    return jwt.encode(payload, settings.jwt_secret, algorithm="HS256")

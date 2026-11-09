@@ -29,7 +29,7 @@ export default function BarcodeScanner({
     setError("");
 
     try {
-      const scanner = new Html5Qrcode("fashionos-barcode-reader");
+      const scanner = new Html5Qrcode("wearverse-barcode-reader");
       scannerRef.current = scanner;
 
       await scanner.start(
@@ -107,7 +107,7 @@ export default function BarcodeScanner({
       </div>
 
       <div
-        id="fashionos-barcode-reader"
+        id="wearverse-barcode-reader"
         className="mt-4 w-full max-w-md overflow-hidden"
       />
 

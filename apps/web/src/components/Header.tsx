@@ -9,11 +9,19 @@ import {
   Search,
 } from "lucide-react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useT } from "../lib/i18n";
+import ChatWidget from "./ChatWidget";
+import { getAccessToken, getCustomerToken } from "../lib/auth/session";
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
+  const { t } = useT();
+  // Signed-in people see where to go instead of "Login".
+  const account = getAccessToken()
+    ? { to: "/backoffice", label: "Back office" }
+    : getCustomerToken() ? { to: "/account", label: "My account" } : { to: "/login", label: "Login" };
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -69,28 +77,28 @@ function Header() {
               to="/sarees"
               className={({ isActive }) => `relative text-gray-700 transition hover:text-primary ${isActive ? "text-primary after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:bg-primary" : ""}`}
             >
-              Sarees
+              {t("Sarees")}
             </NavLink>
 
             <NavLink
               to="/suits"
               className={({ isActive }) => `relative text-gray-700 transition hover:text-primary ${isActive ? "text-primary after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:bg-primary" : ""}`}
             >
-              Suits
+              {t("Suits")}
             </NavLink>
 
             <NavLink
               to="/kids"
               className={({ isActive }) => `relative text-gray-700 transition hover:text-primary ${isActive ? "text-primary after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:bg-primary" : ""}`}
             >
-              Kids
+              {t("Kids")}
             </NavLink>
 
             <NavLink
               to="/new-arrivals"
               className={({ isActive }) => `relative whitespace-nowrap text-gray-700 transition hover:text-primary ${isActive ? "text-primary after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:bg-primary" : ""}`}
             >
-              New Arrivals
+              {t("New Arrivals")}
             </NavLink>
 
           </nav>
@@ -112,7 +120,7 @@ function Header() {
                 name="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search products..."
+                placeholder={t("Search sarees, suits…")}
                 className="w-full border border-gray-300 rounded-full py-2.5 pl-10 pr-4 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition"
               />
 
@@ -146,6 +154,7 @@ function Header() {
           {/* Right Side */}
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
 
+
             {/* Wishlist */}
             <Link
               to="/wishlist"
@@ -174,11 +183,11 @@ function Header() {
 
             {/* Login */}
             <Link
-              to="/login"
+              to={account.to}
               className="hidden lg:flex items-center gap-2 bg-primary text-white px-4 xl:px-5 py-2 xl:py-2.5 rounded-lg hover:bg-primary-dark transition"
             >
               <User size={18} />
-              Login
+              {t(account.label)}
             </Link>
 
             {/* Mobile Menu */}
@@ -232,27 +241,33 @@ function Header() {
                   Home
                 </NavLink>
                 <NavLink to="/sarees" onClick={() => setMenuOpen(false)} className={({ isActive }) => `rounded-lg px-3 py-3 transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary active:bg-primary/15 ${isActive ? "border-l-2 border-primary bg-primary/10 text-primary" : "text-gray-700"}`}>
-                  Sarees
+                  {t("Sarees")}
                 </NavLink>
                 <NavLink to="/suits" onClick={() => setMenuOpen(false)} className={({ isActive }) => `rounded-lg px-3 py-3 transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary active:bg-primary/15 ${isActive ? "border-l-2 border-primary bg-primary/10 text-primary" : "text-gray-700"}`}>
-                  Suits
+                  {t("Suits")}
                 </NavLink>
                 <NavLink to="/kids" onClick={() => setMenuOpen(false)} className={({ isActive }) => `rounded-lg px-3 py-3 transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary active:bg-primary/15 ${isActive ? "border-l-2 border-primary bg-primary/10 text-primary" : "text-gray-700"}`}>
-                  Kids
+                  {t("Kids")}
                 </NavLink>
                 <NavLink to="/new-arrivals" onClick={() => setMenuOpen(false)} className={({ isActive }) => `rounded-lg px-3 py-3 transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary active:bg-primary/15 ${isActive ? "border-l-2 border-primary bg-primary/10 text-primary" : "text-gray-700"}`}>
-                  New Arrivals
+                  {t("New Arrivals")}
                 </NavLink>
+                <Link to="/track" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-gray-700 transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary">
+                  {t("Track order")}
+                </Link>
+                <Link to="/account" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-gray-700 transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary">
+                  {t("My orders")}
+                </Link>
                 <Link to="/contact" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-gray-700 transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary active:bg-primary/15">
                   Contact Us
                 </Link>
                 <Link
-                  to="/login"
+                  to={account.to}
                   onClick={() => setMenuOpen(false)}
                   className="mt-2 flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-white transition-all duration-200 hover:scale-[1.02] hover:bg-primary-dark active:scale-[0.98]"
                 >
                   <User size={18} aria-hidden="true" />
-                  Login
+                  {t(account.label)}
                 </Link>
               </div>
             </nav>
@@ -260,6 +275,7 @@ function Header() {
         )}
 
       </div>
+      <ChatWidget />
     </header>
   );
 }

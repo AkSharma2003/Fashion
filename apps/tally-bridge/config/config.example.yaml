@@ -3,12 +3,12 @@
 #
 # Never commit the local file or real API key.
 
-api_base_url: "http://localhost:8000/api/v1"
+api_base_url: "https://api.wearverse.example/api/v1"   # use https in production
 
 api_key: "CHANGE_ME_TALLY_AGENT_API_KEY"
 
 
-tally_host: "192.168.228.92"
+tally_host: "127.0.0.1"   # Tally runs on the same cloud server
 
 tally_port: 9000
 
@@ -23,3 +23,6 @@ sales_ledger: "Sales"
 poll_seconds: 15
 
 api_timeout_seconds: 20
+
+# Mode A: also read vouchers made in Tally and send them to WearVerse.
+read_from_tally: true

@@ -1,448 +1,171 @@
-import BarcodeScanner from "../../components/backoffice/BarcodeScanner";
 import { useState } from "react";
+import BarcodeScanner from "../../components/backoffice/BarcodeScanner";
+import { Alert, Badge, Button, Card, Field, Input, Loading, Modal, Money, Page, Select, Table } from "../../components/ui";
+import { apiData, patch, post } from "../../lib/api/client";
+import { useAction, useApi } from "../../lib/hooks/useApi";
+import { formatDate } from "../../lib/money";
 
+type OrderItem = { id: string; product_name: string; sku: string; size: string | null; color: string | null; qty: number;
+  line_total_paise: number; fall_pico_skipped: boolean; returned_qty: number };
+type Order = { id: string; order_no: string; status: string; payment_method: string; ship_name: string; ship_phone: string;
+  ship_address: Record<string, string | null>; total_paise: number; created_at: string; items: OrderItem[];
+  fall_pico_jobs: { id: string; tag_code: string; status: string }[];
+  shipment: { courier: string; awb: string; tracking_url: string | null } | null };
 
-type OrderStatus =
-    | "New Orders"
-    | "Picking"
-    | "Packing"
-    | "Ready to Dispatch";
-
-type OnlineOrder = {
-    id: string;
-    customer: string;
-    items: string[];
-    total: number;
-    status: OrderStatus;
-};
-
-type DemoProduct = {
-    id: string;
-    name: string;
-    barcode: string;
-    category: string;
-};
-
-const demoProducts: DemoProduct[] = [
-    {
-        id: "PRD-001",
-        name: "Silk Saree",
-        barcode: "FOS-PRD-001",
-        category: "Sarees",
-    },
-    {
-        id: "PRD-002",
-        name: "Anarkali Suit",
-        barcode: "FOS-PRD-002",
-        category: "Suits",
-    },
-    {
-        id: "PRD-003",
-        name: "Kids Kurta Set",
-        barcode: "FOS-PRD-003",
-        category: "Kids",
-    },
-
-    {
-        id: "PRD-004",
-        name: "Blouse Piece",
-        barcode: "FOS-PRD-004",
-        category: "Blouse",
-    },
-    {
-        id: "PRD-005",
-        name: "Leggings",
-        barcode: "FOS-PRD-005",
-        category: "Kids",
-    },
-];
-
-const initialOrders: OnlineOrder[] = [
-    {
-        id: "ORD-1001",
-        customer: "Priya Sharma",
-        items: ["Silk Saree", "Blouse Piece"],
-        total: 2499,
-        status: "New Orders",
-    },
-    {
-        id: "ORD-1002",
-        customer: "Neha Patel",
-        items: ["Anarkali Suit"],
-        total: 1899,
-        status: "Picking",
-    },
-    {
-        id: "ORD-1003",
-        customer: "Riya Mehta",
-        items: ["Kids Kurta Set", "Leggings"],
-        total: 1299,
-        status: "Packing",
-    },
-];
-
-const tabs: OrderStatus[] = [
-    "New Orders",
-    "Picking",
-    "Packing",
-    "Ready to Dispatch",
+const TABS: { label: string; status: string }[] = [
+  { label: "To pack", status: "READY_TO_PACK" },
+  { label: "Waiting for fall-pico", status: "FALL_PICO_IN_PROGRESS" },
+  { label: "Packed", status: "PACKED" },
+  { label: "Shipped", status: "SHIPPED,DELIVERED" },
+  { label: "Unpaid", status: "PENDING_PAYMENT" },
+  { label: "Closed", status: "CANCELLED,RETURNED" },
 ];
 
 export default function OnlineOrdersPage() {
+  const [tab, setTab] = useState(TABS[0].status);
+  const orders = useApi(() => apiData<Order[]>(`/orders?status=${tab}`), [tab]);
+  const [sel, setSel] = useState<Order | null>(null);
 
-    const [orders, setOrders] = useState(initialOrders);
-    const [activeTab, setActiveTab] =
-        useState<OrderStatus>("New Orders");
+  return (
+    <Page title="Online orders" crumb="Website">
+      <div className="flex flex-wrap gap-2">
+        {TABS.map((t) => (
+          <Button key={t.status} variant={t.status === tab ? "primary" : "secondary"} onClick={() => setTab(t.status)}>{t.label}</Button>
+        ))}
+      </div>
+      <Card>
+        {orders.loading && !orders.data && <Loading />}
+        <Alert>{orders.error}</Alert>
+        <Table rows={orders.data ?? []} rowKey={(o) => o.id} onRowClick={setSel} empty="No orders here." columns={[
+          { key: "no", label: "Order", render: (o) => <div><p className="font-medium">{o.order_no}</p><p className="text-xs text-gray-500">{formatDate(o.created_at, true)}</p></div> },
+          { key: "c", label: "Customer", render: (o) => <div>{o.ship_name}<p className="text-xs text-gray-500">{o.ship_address.city}</p></div> },
+          { key: "i", label: "Items", render: (o) => o.items.map((i) => `${i.qty}× ${i.product_name}`).join(", ") },
+          { key: "s", label: "Status", render: (o) => <div className="flex flex-wrap gap-1"><Badge>{o.status}</Badge>{o.payment_method === "COD" && <Badge tone="info">COD</Badge>}</div> },
+          { key: "t", label: "Total", align: "right", render: (o) => <Money paise={o.total_paise} /> },
+        ]} />
+      </Card>
+      {sel && <OrderModal order={sel} onClose={() => { setSel(null); void orders.reload(); }} />}
+      <ContactMessages />
+    </Page>
+  );
+}
 
-    const [scannedCodes, setScannedCodes] =
-        useState<Record<string, string>>({});
-    const [verifiedItems, setVerifiedItems] =
-        useState<Record<string, string[]>>({});
+function OrderModal({ order: initial, onClose }: { order: Order; onClose: () => void }) {
+  const [order, setOrder] = useState(initial);
+  const act = useAction();
+  const [picked, setPicked] = useState<Record<string, number>>({});
+  const [awb, setAwb] = useState("");
+  const [courier, setCourier] = useState("Shiprocket");
+  const [returnQty, setReturnQty] = useState<Record<string, string>>({});
+  const allPicked = order.items.every((i) => (picked[i.sku] ?? 0) >= i.qty);
 
-    const filteredOrders = orders.filter(
-        (order) => order.status === activeTab
-    );
+  async function setStatus(status: string, note?: string) {
+    const r = await act.run(() => patch<Order>(`/orders/${order.id}/status`, { status, note }), `Order is now ${status.replace(/_/g, " ").toLowerCase()}.`);
+    if (r) setOrder(r);
+  }
 
+  function onScan(code: string) {
+    const item = order.items.find((i) => i.sku === code.trim());
+    if (!item) return act.setError(`Scanned ${code} is not in this order.`);
+    act.setError("");
+    setPicked((p) => ({ ...p, [item.sku]: Math.min((p[item.sku] ?? 0) + 1, item.qty) }));
+  }
 
-    function getPackingProgress(order: OnlineOrder) {
-        const verified = verifiedItems[order.id] ?? [];
-        const total = order.items.length;
+  const a = order.ship_address;
+  return (
+    <Modal open title={`Order ${order.order_no}`} onClose={onClose} wide>
+      <div className="space-y-4">
+        <div className="flex flex-wrap gap-2"><Badge>{order.status}</Badge><Badge tone="info">{order.payment_method}</Badge></div>
+        <p className="text-sm">{order.ship_name} · {order.ship_phone}<br />
+          <span className="text-gray-600">{[a.line1, a.line2, a.landmark, a.city, a.state, a.pincode].filter(Boolean).join(", ")}</span></p>
+        <Alert tone="good">{act.notice}</Alert><Alert>{act.error}</Alert>
 
-        const verifiedCount = order.items.filter(
-            (item) => verified.includes(item)
-        ).length;
+        <Card title="Pick list">
+          <ul className="space-y-2 text-sm">
+            {order.items.map((i) => (
+              <li key={i.id} className="flex items-center justify-between gap-3">
+                <span>{i.qty}× {i.product_name} <span className="text-xs text-gray-500">{i.sku} {[i.size, i.color].filter(Boolean).join(" / ")}</span></span>
+                <Badge tone={(picked[i.sku] ?? 0) >= i.qty ? "good" : "warn"}>{`${picked[i.sku] ?? 0}/${i.qty} scanned`}</Badge>
+              </li>
+            ))}
+          </ul>
+          {order.status === "READY_TO_PACK" && <div className="mt-4"><BarcodeScanner onScan={onScan} /></div>}
+        </Card>
 
-        return {
-            verifiedCount,
-            total,
-            percentage: total === 0
-                ? 0
-                : Math.round((verifiedCount / total) * 100),
-        };
-    }
+        {order.fall_pico_jobs.length > 0 && (
+          <Card title="Fall-pico">
+            <div className="flex flex-wrap gap-2">{order.fall_pico_jobs.map((j) => <span key={j.id} className="text-sm">{j.tag_code} <Badge>{j.status}</Badge></span>)}</div>
+            <p className="mt-2 text-xs text-gray-500">The order can be packed only after QC passes (or the customer skipped fall-pico).</p>
+          </Card>
+        )}
 
-    function updateStatus(orderId: string, status: OrderStatus) {
-        setOrders((currentOrders) =>
-            currentOrders.map((order) =>
-                order.id === orderId ? { ...order, status } : order
-            )
-        );
-    }
-
-    function nextStatus(status: OrderStatus): OrderStatus | null {
-        const index = tabs.indexOf(status);
-        return index < tabs.length - 1 ? tabs[index + 1] : null;
-    }
-
-    return (
-        <div className="min-h-screen bg-[#F7F7F7] p-4 text-[#111111] sm:p-6">
-            <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                <div>
-                    <p className="text-sm text-gray-500">
-                        Backoffice / Orders
-                    </p>
-                    <h1 className="mt-1 text-2xl font-semibold">
-                        Online Orders
-                    </h1>
-                    <p className="mt-1 text-sm text-gray-500">
-                        Pick, pack and prepare customer orders for dispatch.
-                    </p>
-                </div>
-
-                <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
-                    <p className="text-xs text-gray-500">Total Orders</p>
-                    <p className="text-2xl font-semibold">{orders.length}</p>
-                </div>
-            </div>
-
-
-            {/* Order status summary */}
-            <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`rounded-xl border p-4 text-left transition ${activeTab === tab
-                            ? "border-[#111111] bg-[#111111] text-white"
-                            : "border-gray-200 bg-white hover:border-gray-400"
-                            }`}
-                    >
-                        <p className="text-sm">{tab}</p>
-                        <p className="mt-2 text-2xl font-semibold">
-                            {orders.filter((order) => order.status === tab).length}
-                        </p>
-                    </button>
-                ))}
-            </div>
-
-            {/* Order status tabs */}
-            <div className="mb-4 flex flex-wrap gap-2">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`rounded-full px-4 py-2 text-sm ${activeTab === tab
-                            ? "bg-[#111111] text-white"
-                            : "border border-gray-200 bg-white text-gray-700"
-                            }`}
-                    >
-                        {tab}
-                    </button>
-                ))}
-            </div>
-
-            {/* Orders list */}
-
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-                <div className="border-b border-gray-200 p-4">
-                    <h2 className="font-semibold">{activeTab}</h2>
-                    <p className="mt-1 text-sm text-gray-500">
-                        {filteredOrders.length} order(s) in this stage
-                    </p>
-                </div>
-
-                {filteredOrders.length === 0 ? (
-                    <div className="p-10 text-center">
-                        <p className="font-medium">
-                            No orders in this stage
-                        </p>
-                        <p className="mt-1 text-sm text-gray-500">
-                            Orders will appear here when their status changes.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="divide-y divide-gray-200">
-                        {filteredOrders.map((order) => (
-                            <div
-                                key={order.id}
-                                className="flex flex-col gap-4 p-4 sm:p-5"
-                            >
-                                <div>
-                                    <p className="font-semibold">{order.id}</p>
-
-                                    {(() => {
-                                        const progress = getPackingProgress(order);
-
-                                        return (
-                                            <div className="mt-3 max-w-md">
-                                                <div className="mb-2 flex items-center justify-between text-sm">
-                                                    <span className="font-medium text-gray-700">
-                                                        Packing Progress
-                                                    </span>
-                                                    <span className="text-gray-500">
-                                                        {progress.verifiedCount}/{progress.total} products · {progress.percentage}%
-                                                    </span>
-                                                </div>
-
-                                                <div className="h-2 overflow-hidden rounded-full bg-gray-200">
-                                                    <div
-                                                        className="h-full rounded-full bg-green-600 transition-all duration-300"
-                                                        style={{ width: `${progress.percentage}%` }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        );
-                                    })()}
-                                    <p className="mt-1 text-sm text-gray-600">
-                                        Customer: {order.customer}
-                                    </p>
-
-
-                                    <div className="mt-4 rounded-lg border border-gray-200 bg-white p-4">
-                                        <h3 className="mb-3 text-base font-semibold">
-                                            Customer ne ye products order kiye hain
-                                        </h3>
-
-                                        <div className="space-y-3">
-
-                                            {order.items.map((item, index) => {
-                                                const product = demoProducts.find(
-                                                    (p) => p.name === item
-                                                );
-
-                                                const isVerified = (
-                                                    verifiedItems[order.id] ?? []
-                                                ).includes(item);
-
-                                                return (
-                                                    <div
-                                                        key={`${item}-${index}`}
-                                                        className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3"
-                                                    >
-                                                        <div>
-                                                            <p className="font-medium">{item}</p>
-
-                                                            <p className="mt-1 text-xs text-gray-500">
-                                                                {product
-                                                                    ? `Barcode: ${product.barcode}`
-                                                                    : "Barcode abhi product list mein add nahi hai"}
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="flex shrink-0 flex-col items-end gap-2">
-                                                            <span className="rounded-md border border-gray-200 bg-white px-3 py-1 text-sm">
-                                                                Qty: 1
-                                                            </span>
-
-                                                            <span
-                                                                className={`rounded-md px-3 py-1 text-xs font-semibold ${isVerified
-                                                                    ? "bg-green-100 text-green-700"
-                                                                    : "bg-yellow-100 text-yellow-700"
-                                                                    }`}
-                                                            >
-                                                                {isVerified ? "✓ Verified" : "Pending"}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-
-                                        <div className="mt-4 border-t border-gray-200 pt-3">
-                                            <p className="text-sm text-gray-500">Customer</p>
-                                            <p className="font-medium">{order.customer}</p>
-
-                                            <p className="mt-3 text-sm text-gray-500">Order Total</p>
-                                            <p className="text-lg font-semibold">
-                                                ₹{order.total.toLocaleString("en-IN")}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <p className="mt-3 font-medium">
-                                        ₹{order.total.toLocaleString("en-IN")}
-                                    </p>
-                                </div>
-
-                                {/* Per-order barcode scanner */}
-                                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                                    <h3 className="mb-3 font-semibold">
-                                        Verify Products — {order.id}
-                                    </h3>
-
-
-
-                                    <BarcodeScanner
-                                        onScan={(code) => {
-                                            setScannedCodes((current) => ({
-                                                ...current,
-                                                [order.id]: code,
-                                            }));
-
-                                            const product = demoProducts.find(
-                                                (item) =>
-                                                    item.barcode.toLowerCase() ===
-                                                    code.trim().toLowerCase()
-                                            );
-
-                                            if (!product || !order.items.includes(product.name)) {
-                                                return;
-                                            }
-
-                                            const updatedVerifiedItems = [
-                                                ...new Set([
-                                                    ...(verifiedItems[order.id] ?? []),
-                                                    product.name,
-                                                ]),
-                                            ];
-
-                                            setVerifiedItems((current) => ({
-                                                ...current,
-                                                [order.id]: updatedVerifiedItems,
-                                            }));
-
-                                            const allProductsVerified = order.items.every(
-                                                (item) => updatedVerifiedItems.includes(item)
-                                            );
-
-                                            if (allProductsVerified) {
-                                                updateStatus(order.id, "Ready to Dispatch");
-                                            }
-                                        }}
-                                    />
-
-                                    {scannedCodes[order.id] && (() => {
-                                        const code = scannedCodes[order.id].trim();
-
-                                        const product = demoProducts.find(
-                                            (item) =>
-                                                item.barcode.toLowerCase() ===
-                                                code.toLowerCase()
-                                        );
-
-                                        if (!product) {
-                                            return (
-                                                <div className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-                                                    <p className="font-semibold">
-                                                        Product Not Found
-                                                    </p>
-                                                    <p>Barcode: {code}</p>
-                                                </div>
-                                            );
-                                        }
-
-                                        const belongsToOrder =
-                                            order.items.includes(product.name);
-
-                                        return (
-                                            <div
-                                                className={`mt-3 rounded-lg p-3 text-sm ${belongsToOrder
-                                                    ? "bg-green-50 text-green-700"
-                                                    : "bg-red-50 text-red-700"
-                                                    }`}
-                                            >
-                                                <p className="font-semibold">
-                                                    {belongsToOrder
-                                                        ? "✓ Product Verified"
-                                                        : "✗ Wrong Product"}
-                                                </p>
-                                                <p>Product: {product.name}</p>
-                                                <p>Category: {product.category}</p>
-                                                <p>Barcode: {code}</p>
-                                            </div>
-                                        );
-                                    })()}
-                                </div>
-
-                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                    <span className="rounded-full bg-gray-100 px-3 py-2 text-center text-xs font-medium">
-                                        {order.status}
-                                    </span>
-
-                                    {nextStatus(order.status) && (
-                                        <button
-                                            onClick={() => {
-                                                const status = nextStatus(order.status);
-                                                if (status) {
-                                                    updateStatus(order.id, status);
-                                                }
-                                            }}
-                                            className="min-h-11 rounded-lg bg-[#111111] px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-                                        >
-                                            {order.status === "New Orders"
-                                                ? "Start Picking"
-                                                : order.status === "Picking"
-                                                    ? "Start Packing"
-                                                    : "Mark Ready to Dispatch"}
-                                        </button>
-                                    )}
-
-                                    {order.status === "Ready to Dispatch" && (
-                                        <span className="text-sm font-medium text-green-700">
-                                            Ready for dispatch
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            <p className="mt-4 text-xs text-gray-500">
-                Demo UI: orders and scanned codes are temporary.
-                Data resets when the page reloads.
-            </p>
+        <div className="flex flex-wrap gap-2">
+          {order.status === "READY_TO_PACK" && <Button disabled={act.busy || !allPicked} onClick={() => void setStatus("PACKED")}>Mark packed</Button>}
+          {order.status === "SHIPPED" && <Button onClick={() => void setStatus("DELIVERED")}>Mark delivered</Button>}
+          {["PAID", "CONFIRMED", "READY_TO_PACK", "FALL_PICO_IN_PROGRESS", "PACKED", "PENDING_PAYMENT"].includes(order.status) && (
+            <Button variant="danger" disabled={act.busy} onClick={() => { if (window.confirm("Cancel this order? Paid orders are refunded.")) void setStatus("CANCELLED", "Cancelled by staff"); }}>Cancel order</Button>
+          )}
         </div>
-    );
+
+        {order.status === "PACKED" && (
+          <Card title="Create shipment">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="Courier"><Input value={courier} onChange={(e) => setCourier(e.target.value)} /></Field>
+              <Field label="AWB number" hint="Leave empty to book on Shiprocket"><Input value={awb} onChange={(e) => setAwb(e.target.value)} /></Field>
+              <div className="flex items-end"><Button disabled={act.busy} onClick={async () => {
+                const r = await act.run(() => post<{ awb: string; courier: string; tracking_url: string | null }>(`/orders/${order.id}/shipment`, { courier, awb: awb || null }), "Shipment created.");
+                if (r) setOrder({ ...order, status: "SHIPPED", shipment: r });
+              }}>Ship</Button></div>
+            </div>
+          </Card>
+        )}
+        {order.shipment && <p className="text-sm">Shipped with {order.shipment.courier}, AWB {order.shipment.awb}</p>}
+
+        {["SHIPPED", "DELIVERED"].includes(order.status) && (
+          <Card title="Return items (manager)">
+            {order.items.map((i) => (
+              <div key={i.id} className="mb-2 flex items-center gap-3 text-sm">
+                <span className="flex-1">{i.product_name} (bought {i.qty}, returned {i.returned_qty})</span>
+                <Select className="w-24" value={returnQty[i.id] ?? "0"} onChange={(e) => setReturnQty({ ...returnQty, [i.id]: e.target.value })}>
+                  {Array.from({ length: i.qty - i.returned_qty + 1 }, (_, n) => <option key={n}>{n}</option>)}
+                </Select>
+              </div>
+            ))}
+            <Button variant="secondary" disabled={act.busy} onClick={async () => {
+              const items = Object.entries(returnQty).filter(([, q]) => Number(q) > 0).map(([order_item_id, q]) => ({ order_item_id, qty: Number(q) }));
+              if (!items.length) return;
+              await act.run(() => post(`/orders/${order.id}/returns`, { items }), "Return saved; stock is back and refund started.");
+            }}>Save return</Button>
+          </Card>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+type ContactMessage = { id: string; name: string; email: string; phone: string | null; message: string; status: string; created_at: string };
+
+/** Messages customers sent from the website's Contact page. */
+function ContactMessages() {
+  const [showDone, setShowDone] = useState(false);
+  const msgs = useApi(() => apiData<ContactMessage[]>(`/store/contact-messages?status=${showDone ? "DONE" : "NEW"}`), [showDone]);
+  const act = useAction();
+  return (
+    <Card title="Messages from the website" actions={
+      <Button variant="secondary" onClick={() => setShowDone(!showDone)}>{showDone ? "Show new" : "Show done"}</Button>}>
+      {msgs.loading && !msgs.data && <Loading />}
+      <Alert>{msgs.error || act.error}</Alert>
+      <Table rows={msgs.data ?? []} rowKey={(m) => m.id} empty={showDone ? "No answered messages." : "No new messages."} columns={[
+        { key: "from", label: "From", render: (m) => <div><p className="font-medium">{m.name}</p>
+          <p className="text-xs text-gray-500"><a className="underline" href={`mailto:${m.email}`}>{m.email}</a>{m.phone ? ` · ${m.phone}` : ""}</p></div> },
+        { key: "message", label: "Message", render: (m) => <p className="max-w-xl whitespace-pre-wrap text-sm">{m.message}</p> },
+        { key: "when", label: "Received", render: (m) => formatDate(m.created_at, true) },
+        { key: "act", label: "", render: (m) => (
+          <Button variant="secondary" disabled={act.busy} onClick={async () => {
+            await act.run(() => patch(`/store/contact-messages/${m.id}`, { status: m.status === "NEW" ? "DONE" : "NEW" }));
+            void msgs.reload();
+          }}>{m.status === "NEW" ? "Mark done" : "Mark new"}</Button>) },
+      ]} />
+    </Card>
+  );
 }

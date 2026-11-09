@@ -12,8 +12,9 @@ DO $$
 DECLARE t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY[
-    'ledger_entries', 'stock_movements', 'audit_logs',
-    'fp_job_events', 'salary_payments', 'advance_recoveries', 'fp_worker_ledger'
+    'ledger_entries', 'ledger_allocations', 'stock_movements', 'audit_logs',
+    'fp_job_events', 'salary_payments', 'advance_recoveries', 'fp_worker_ledger',
+    'message_events', 'order_status_logs', 'webhook_events'
   ] LOOP
     IF to_regclass(t) IS NOT NULL THEN
       EXECUTE format('DROP TRIGGER IF EXISTS %I ON %I', t || '_append_only', t);

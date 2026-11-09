@@ -6,8 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.modules.catalog.models import Product
-from app.modules.inventory import repository
-from app.modules.inventory.models import ProductVariant, StockLevel
+from app.core.audit import write_audit
+from app.modules.inventory import repository, stock
+from app.modules.inventory.models import ProductVariant, StockLevel, StockMovement
 
 
 def create_variant(db: Session, payload):
@@ -79,7 +80,10 @@ def get_stock(db: Session, variant_id: UUID | None = None):
 
         result.append({
             "variant_id": variant.id,
+            "product_id": variant.product_id,
             "product_name": product.name if product else None,
+            "category": product.category if product else None,
+            "price_paise": stock.variant_price(variant, product),
             "sku": variant.sku,
             "size": variant.size,
             "color": variant.color,
@@ -91,7 +95,7 @@ def get_stock(db: Session, variant_id: UUID | None = None):
     return result
 
 
-def adjust_stock(db: Session, payload):
+def adjust_stock(db: Session, payload, actor_id: str | None = None):
     if payload.quantity_delta == 0:
         raise HTTPException(
             status_code=400,
@@ -99,11 +103,7 @@ def adjust_stock(db: Session, payload):
         )
 
     try:
-        level = repository.get_stock_level(
-            db,
-            payload.variant_id,
-            for_update=True,
-        )
+        level = repository.get_stock_level(db, payload.variant_id, for_update=True)
 
         if level is None:
             raise HTTPException(
@@ -125,15 +125,14 @@ def adjust_stock(db: Session, payload):
                 detail="Stock cannot become negative",
             )
 
-        level.on_hand = new_quantity
-
-        repository.create_stock_movement(
-            db=db,
-            variant_id=payload.variant_id,
-            quantity_delta=payload.quantity_delta,
-            movement_type="adjustment",
-            reason=payload.reason,
+        stock.move(
+            db, payload.variant_id, payload.quantity_delta, "adjustment",
+            source="adjustment", reason=payload.reason, actor_id=actor_id,
         )
+        write_audit(db, actor_id=actor_id, action="stock_adjust", entity="variant",
+                    entity_id=str(payload.variant_id),
+                    old_value={"on_hand": new_quantity - payload.quantity_delta},
+                    new_value={"on_hand": new_quantity, "reason": payload.reason})
 
         db.commit()
         db.refresh(level)
@@ -151,7 +150,7 @@ def adjust_stock(db: Session, payload):
         raise
 
 
-def create_stock_count(db: Session, payload):
+def create_stock_count(db: Session, payload, actor_id: str | None = None):
     try:
         level = repository.get_stock_level(
             db,
@@ -183,16 +182,12 @@ def create_stock_count(db: Session, payload):
         )
 
         if difference != 0:
-            level.on_hand = payload.counted_quantity
-
-            repository.create_stock_movement(
-                db=db,
-                variant_id=payload.variant_id,
-                quantity_delta=difference,
-                movement_type="stock_count",
-                reason=payload.reason,
-                reference_type="stock_count",
-                reference_id=str(stock_count.id),
+            # Stock count writes an adjustment movement; nothing overwrites on_hand directly.
+            stock.move(
+                db, payload.variant_id, difference, "stock_count", source="adjustment",
+                reason=payload.reason, reference_type="stock_count",
+                reference_id=str(stock_count.id), actor_id=actor_id, allow_negative=True,
+                alert_on_negative=False,
             )
 
         db.commit()
@@ -210,3 +205,21 @@ def create_stock_count(db: Session, payload):
     except Exception:
         db.rollback()
         raise
+
+
+def list_movements(db: Session, variant_id: UUID, limit: int = 100):
+    rows = db.scalars(
+        select(StockMovement)
+        .where(StockMovement.variant_id == variant_id)
+        .order_by(StockMovement.created_at.desc())
+        .limit(limit)
+    ).all()
+    return [
+        {
+            "id": str(m.id), "quantity_delta": m.quantity_delta, "movement_type": m.movement_type,
+            "source": m.source, "reason": m.reason, "reference_type": m.reference_type,
+            "reference_id": m.reference_id, "created_by": m.created_by,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+        }
+        for m in rows
+    ]
