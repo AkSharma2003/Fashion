@@ -1,21 +1,5 @@
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import Card from "../../components/Card";
-import { sareeProducts } from "../../data/catalog";
+import CategoryPage from "../../components/CategoryPage";
 
 export default function Saree() {
-  return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-linear-to-br from-background to-Alt_background px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-        <section className="mx-auto max-w-7xl">
-         
-          <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:gap-6 lg:grid-cols-4">
-            {sareeProducts.map((product) => <Card key={product.name} product={product} />)}
-          </div>
-        </section>
-      </main>
-      <Footer />
-    </>
-  );
+  return <CategoryPage title="Sarees" category="Sarees" subtitle="Silk, cotton and party-wear sarees. Free fall-pico on sarees above ₹1,000." />;
 }

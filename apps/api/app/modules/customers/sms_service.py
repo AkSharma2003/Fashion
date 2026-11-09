@@ -24,6 +24,7 @@ async def send_otp_sms(phone_number: str, otp: str) -> bool:
     if len(phone_number) != 10 or not phone_number.isdigit():
         raise ValueError("Invalid Indian mobile number format")
 
+    # DLT-registered template name at 2factor; keep as registered until a WearVerse template is approved.
     template_name = "FASHIONOS_REGISTER_OTP"
 
     url = (

@@ -4,25 +4,20 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ShoppingCart, Minus, Plus } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import ProductExtras from "../components/ProductExtras";
 import clothingFallback from "../assets/images/clothing-fallback.svg";
 import { addToCart } from "../lib/cart";
-import {
-    getProducts,
-    getProductImages,
-    getProductVariants,
-    type Product,
-    type ProductImage,
-    type ProductVariant,
-} from "../lib/api/client";
+import { apiData } from "../lib/api/client";
+import type { StoreCard, StoreVariant } from "../lib/storeCards";
 import type { ClothingCardProduct } from "../components/Card";
 
-const API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+/** Variant as this page uses it (from the public store API). */
+type ProductVariant = {
+    id: string; size: string; color: string; sku: string;
+    selling_price_paise: number; stock_quantity: number; is_active: boolean;
+};
 
-function resolveImageUrl(url: string | null | undefined): string {
-    if (!url) return clothingFallback;
-    if (url.startsWith("http")) return url;
-    return `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}`;
-}
+type StoreProductDetail = StoreCard & { images: (string | null)[]; variants: StoreVariant[] };
 
 export default function ProductDetails() {
     const { productId } = useParams<{ productId: string }>();
@@ -57,40 +52,18 @@ export default function ProductDetails() {
                     throw new Error("Product ID is missing.");
                 }
 
-                const products = await getProducts();
-                const selectedProduct = products.find(
-                    (item: Product) => item.id === productId && item.is_active,
+                const detail = await apiData<StoreProductDetail>(
+                    `/store/products/${encodeURIComponent(productId)}`,
                 );
-
-                if (!selectedProduct) {
-                    throw new Error("Product not found.");
-                }
-
-                let imageUrls: string[] = [];
-                try {
-                    const productImages: ProductImage[] = await getProductImages(
-                        selectedProduct.id,
-                    );
-
-                    imageUrls = productImages
-                        .map((item) => resolveImageUrl(item.image_url))
-                        .filter((url) => url !== clothingFallback);
-                } catch {
-                    // Image loading fail hone par fallback image use hogi.
-                }
-
-                let productVariants: ProductVariant[] = [];
-                try {
-                    productVariants = await getProductVariants(selectedProduct.id);
-                } catch {
-                    if (!cancelled) {
-                        setVariantError("Size aur stock details load nahi ho paayi.");
-                    }
-                }
-
-                productVariants = productVariants.filter(
-                    (variant) => variant.is_active,
-                );
+                const selectedProduct = {
+                    id: detail.id, name: detail.name, description: detail.description,
+                    category: detail.category, selling_price_paise: detail.price_from_paise,
+                };
+                const imageUrls = detail.images.filter((url): url is string => Boolean(url));
+                const productVariants: ProductVariant[] = detail.variants.map((v) => ({
+                    id: v.id, size: v.size ?? "Free", color: v.color ?? "", sku: v.sku,
+                    selling_price_paise: v.price_paise, stock_quantity: v.available, is_active: true,
+                }));
 
                 const primaryImage = imageUrls[0] ?? clothingFallback;
 
@@ -153,7 +126,7 @@ export default function ProductDetails() {
         }
 
         if (selectedVariant && selectedVariant.stock_quantity <= 0) {
-            setCartMessage("Ye variant abhi out of stock hai.");
+            setCartMessage("This size is out of stock right now.");
             return;
         }
 
@@ -161,7 +134,7 @@ export default function ProductDetails() {
             selectedVariant &&
             quantity > selectedVariant.stock_quantity
         ) {
-            setCartMessage("Selected quantity available stock se zyada hai.");
+            setCartMessage(`Only ${selectedVariant.stock_quantity} left in stock.`);
             return;
         }
 
@@ -190,7 +163,7 @@ export default function ProductDetails() {
         );
 
         if (!added) {
-            setCartMessage("Itni quantity stock mein available nahi hai.");
+            setCartMessage("That many pieces are not in stock.");
             return;
         }
 
@@ -199,7 +172,7 @@ export default function ProductDetails() {
             return;
         }
 
-        setCartMessage("Product cart mein add ho gaya!");
+        setCartMessage("Added to your cart.");
     }
 
     const price = selectedVariant
@@ -430,6 +403,7 @@ export default function ProductDetails() {
                         </section>
                     )}
                 </div>
+            {productId && <ProductExtras productId={productId} />}
             </main>
 
             <Footer />

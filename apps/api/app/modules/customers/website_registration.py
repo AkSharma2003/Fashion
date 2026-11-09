@@ -17,11 +17,11 @@ def _normalize_email(email: str) -> str:
 
 
 def _otp_key(email: str) -> str:
-    return f"fashionos:customer-registration:otp:{_normalize_email(email)}"
+    return f"wearverse:customer-registration:otp:{_normalize_email(email)}"
 
 
 def _attempts_key(email: str) -> str:
-    return f"fashionos:customer-registration:attempts:{_normalize_email(email)}"
+    return f"wearverse:customer-registration:attempts:{_normalize_email(email)}"
 
 
 def generate_otp() -> str:
@@ -107,7 +107,7 @@ PENDING_REGISTRATION_TTL_SECONDS = 300
 
 def _pending_registration_key(email: str) -> str:
     return (
-        "fashionos:customer-registration:pending:"
+        "wearverse:customer-registration:pending:"
         f"{_normalize_email(email)}"
     )
 

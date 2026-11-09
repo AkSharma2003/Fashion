@@ -10,12 +10,12 @@ async def send_otp_email(
     """Send a test OTP email to the local Mailpit inbox."""
 
     message = EmailMessage()
-    message["From"] = "FashionOS <no-reply@fashionos.local>"
+    message["From"] = "WearVerse <no-reply@wearverse.local>"
     message["To"] = email
-    message["Subject"] = "Your FashionOS verification code"
+    message["Subject"] = "Your WearVerse verification code"
 
     message.set_content(
-        f"Your FashionOS verification code is: {otp}\n\n"
+        f"Your WearVerse verification code is: {otp}\n\n"
         "This code expires in 5 minutes.\n"
         "If you did not request this, ignore this email."
     )

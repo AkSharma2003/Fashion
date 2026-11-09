@@ -1,4 +1,4 @@
-"""FashionOS -> Tally bridge agent."""
+"""WearVerse <-> Tally bridge agent. Outbound HTTPS only; Tally's port is never opened to the internet."""
 
 from __future__ import annotations
 
@@ -15,9 +15,10 @@ from tally_client import (
     TallyError
 )
 
+from tally_reader import parse_vouchers, vouchers_request
 from voucher_builder import (
-    build_sales_voucher,
-    parse_import_response
+    parse_import_response,
+    voucher_from_event
 )
 
 
@@ -60,97 +61,37 @@ def _api_headers(
     }
 
 
-def post_to_tally(
-    item: dict,
-    cfg: dict
-) -> tuple[bool, str]:
+def _client(cfg: dict) -> TallyClient:
+    return TallyClient(host=str(cfg["tally_host"]), port=int(cfg.get("tally_port", 9000)),
+                       timeout=int(cfg.get("tally_timeout_seconds", 10)))
 
+
+def post_to_tally(item: dict, cfg: dict) -> tuple[bool, str]:
     payload = item.get("payload") or {}
-
-    event_type = item.get(
-        "event_type"
-    )
-
-    if event_type != "sales_voucher":
-
-        return (
-            False,
-            f"Unsupported Tally event type: "
-            f"{event_type}"
-        )
-
     try:
-
-        xml_data = build_sales_voucher(
-
-            reference=str(
-                payload["reference"]
-            ),
-
-            voucher_date=payload.get(
-                "voucher_date",
-                date.today()
-            ),
-
-            customer_name=str(
-                payload["customer_name"]
-            ),
-
-            amount=payload["amount"],
-
-            company_name=str(
-                cfg["company_name"]
-            ),
-
-            party_ledger=payload.get(
-                "party_ledger"
-            ),
-
-            sales_ledger=str(
-                payload.get(
-                    "sales_ledger",
-                    cfg.get(
-                        "sales_ledger",
-                        "Sales"
-                    )
-                )
-            )
-        )
-
-        response = TallyClient(
-
-            host=str(
-                cfg["tally_host"]
-            ),
-
-            port=int(
-                cfg.get(
-                    "tally_port",
-                    9000
-                )
-            ),
-
-            timeout=int(
-                cfg.get(
-                    "tally_timeout_seconds",
-                    10
-                )
-            )
-
-        ).post_xml(xml_data)
-
-        return parse_import_response(
-            response
-        )
-
-    except (
-        KeyError,
-        TypeError,
-        ValueError,
-        TallyError
-    ) as exc:
-
+        xml_data = voucher_from_event(str(item.get("event_type")), payload, str(cfg["company_name"]))
+        return parse_import_response(_client(cfg).post_xml(xml_data))
+    except (KeyError, TypeError, ValueError, TallyError) as exc:
         return False, str(exc)
+
+
+def read_from_tally(cfg: dict, base: str, headers: dict, timeout: int) -> None:
+    """Mode A: send vouchers made or changed in Tally to WearVerse (/tally/inbox)."""
+    beat = requests.post(f"{base}/tally/heartbeat", json={"agent": "wearverse-tally-bridge"},
+                         headers=headers, timeout=timeout)
+    beat.raise_for_status()
+    last = int(beat.json().get("last_alter_id") or 0)
+    xml_text = _client(cfg).post_xml(vouchers_request(str(cfg["company_name"]), last))
+    records, max_alter = parse_vouchers(xml_text)
+    if not records and max_alter <= last:
+        return
+    for start in range(0, max(len(records), 1), 200):
+        chunk = records[start:start + 200]
+        result = requests.post(f"{base}/tally/inbox",
+                               json={"records": chunk, "last_alter_id": max_alter if start + 200 >= len(records) else None},
+                               headers=headers, timeout=timeout)
+        result.raise_for_status()
+        print(f"inbox: {result.json()}")
 
 
 def test_tally(
@@ -253,6 +194,12 @@ def run_once(
             f"- {message}"
         )
 
+    if cfg.get("read_from_tally", True):
+        try:
+            read_from_tally(cfg, base, headers, int(cfg.get("api_timeout_seconds", 20)))
+        except (TallyError, ValueError) as exc:
+            print(f"reading from Tally failed, will retry: {exc}")
+
 
 def run() -> None:
 
@@ -266,7 +213,7 @@ def run() -> None:
     )
 
     print(
-        "FashionOS Tally Bridge started: "
+        "WearVerse Tally Bridge started: "
         f"Tally={cfg['tally_host']}:"
         f"{cfg.get('tally_port', 9000)} "
         f"poll={poll_seconds}s"
@@ -299,7 +246,7 @@ def run() -> None:
 def main() -> None:
 
     parser = argparse.ArgumentParser(
-        description="FashionOS Tally bridge"
+        description="WearVerse Tally bridge"
     )
 
     parser.add_argument(

@@ -1,13 +1,31 @@
 import { useState, type FormEvent } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { errorMessage, post } from "../lib/api/client";
 
 export default function Contact() {
   const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setNotice("The contact form is not connected yet, so your message was not sent.");
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setNotice("");
+    setError("");
+    setSending(true);
+    try {
+      const phone = String(data.get("phone") ?? "").replace(/\D/g, "");
+      await post("/store/contact", { name: String(data.get("name") ?? "").trim(), email: String(data.get("email") ?? "").trim(),
+        phone: phone || undefined, message: String(data.get("message") ?? "").trim() });
+      form.reset();
+      setNotice("Thank you! Your message has reached the shop. We usually reply within one working day.");
+    } catch (caught) {
+      setError(errorMessage(caught, "Could not send your message. Please try again."));
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -21,7 +39,7 @@ export default function Contact() {
               Contact Us
             </h1>
             <p className="mt-4 max-w-md leading-7 text-text">
-              Have a question about an order, a product, or sizing? Send us a message and our team will be ready to help once support messages are connected.
+              Have a question about an order, a product, or sizing? Send us a message and our team will get back to you.
             </p>
           </section>
 
@@ -37,13 +55,18 @@ export default function Contact() {
                 <input id="contact-email" name="email" type="email" autoComplete="email" required className="min-h-12 w-full rounded-lg border border-divider px-4 py-3 text-base text-main_text outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
               </div>
               <div>
-                <label htmlFor="contact-message" className="mb-2 block text-sm font-medium text-main_text">How can we help?</label>
-                <textarea id="contact-message" name="message" rows={5} required className="w-full resize-y rounded-lg border border-divider px-4 py-3 text-base text-main_text outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                <label htmlFor="contact-phone" className="mb-2 block text-sm font-medium text-main_text">Mobile number (optional)</label>
+                <input id="contact-phone" name="phone" type="tel" inputMode="numeric" pattern="\d{10}" maxLength={10} autoComplete="tel" className="min-h-12 w-full rounded-lg border border-divider px-4 py-3 text-base text-main_text outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
               </div>
-              <button type="submit" className="min-h-12 w-full rounded-lg bg-primary px-4 py-3 font-semibold text-white transition hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
-                Send message
+              <div>
+                <label htmlFor="contact-message" className="mb-2 block text-sm font-medium text-main_text">How can we help?</label>
+                <textarea id="contact-message" name="message" rows={5} required minLength={5} maxLength={2000} className="w-full resize-y rounded-lg border border-divider px-4 py-3 text-base text-main_text outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+              </div>
+              <button type="submit" disabled={sending} className="disabled:opacity-60 min-h-12 w-full rounded-lg bg-primary px-4 py-3 font-semibold text-white transition hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                {sending ? "Sending…" : "Send message"}
               </button>
-              {notice && <p role="status" className="text-sm text-sale">{notice}</p>}
+              {notice && <p role="status" className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{notice}</p>}
+              {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
             </form>
           </section>
         </div>

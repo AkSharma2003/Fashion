@@ -11,4 +11,4 @@ Status: accepted
 Why: one language for backend and AI; PostgreSQL is safe for money, ledgers and stock (transactions, joins,
 database-level rules); MongoDB and a Node backend were considered and not chosen.
 
-Open: public website needs prerendering or server rendering for SEO (SRS question 22).
+SEO (SRS question 22): solved with server-rendered pages for bots, see ADR 0005.

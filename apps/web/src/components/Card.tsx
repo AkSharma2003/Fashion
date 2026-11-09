@@ -8,6 +8,7 @@ import {
   wishlistUpdatedEventName,
 } from "../lib/wishlist";
 import { addToCart, cartUpdatedEventName, getCart } from "../lib/cart";
+import type { StoreVariant } from "../lib/storeCards";
 
 export type ClothingCardColor = {
   name: string;
@@ -23,6 +24,10 @@ export type ClothingCardProduct = {
   imageAlt: string;
   colors: ClothingCardColor[];
   tag?: string;
+  /** false when nothing is left in stock (from the store API). */
+  inStock?: boolean;
+  /** Set when the product has a single size/colour, so it can go straight into the cart. */
+  variant?: StoreVariant;
 };
 
 type CardProps = {
@@ -31,6 +36,22 @@ type CardProps = {
 
 export default function Card({ product }: CardProps) {
   const navigate = useNavigate();
+  const [note, setNote] = useState("");
+  const soldOut = product.inStock === false;
+
+  /** Single-size products go straight into the cart; others open the product page to choose a size. */
+  const add = (goToCart: boolean) => {
+    setNote("");
+    const v = product.variant;
+    if (!v) {
+      if (product.id) navigate(`/product/${encodeURIComponent(product.id)}`);
+      return;
+    }
+    const added = addToCart({ ...product, price: v.price_paise / 100 }, {
+      variantId: v.id, size: v.size ?? undefined, color: v.color ?? undefined, sku: v.sku, stockQuantity: v.available });
+    if (!added) { setNote("No more pieces in stock."); return; }
+    if (goToCart) navigate("/cart");
+  };
   const openProductDetails = () => {
     if (product.id) {
       navigate(`/product/${encodeURIComponent(product.id)}`);
@@ -140,27 +161,27 @@ export default function Card({ product }: CardProps) {
         <div className="mt-2 grid grid-cols-2 gap-1 sm:mt-3 sm:gap-2">
           <button
             type="button"
-            onClick={() => addToCart(product)}
-            aria-label={`Add ${product.name} to cart`}
-            className="inline-flex min-h-9 min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-primary px-1 py-1.5 text-[10px] font-semibold text-primary transition hover:bg-primary/5 active:scale-[0.98] sm:min-h-11 sm:gap-2 sm:px-2 sm:py-2 sm:text-sm"
+            onClick={() => add(false)}
+            disabled={soldOut}
+            aria-label={product.variant ? `Add ${product.name} to cart` : `Choose a size for ${product.name}`}
+            className="inline-flex min-h-9 min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-primary px-1 py-1.5 text-[10px] font-semibold text-primary transition hover:bg-primary/5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-11 sm:gap-2 sm:px-2 sm:py-2 sm:text-sm"
           >
             <ShoppingCart size={14} aria-hidden="true" />
-            <span className="sm:hidden">{inCart ? "Add +" : "Add"}</span>
-            <span className="hidden sm:inline">{inCart ? "Add another" : "Add to cart"}</span>
+            <span className="sm:hidden">{soldOut ? "Sold out" : !product.variant ? "Size" : inCart ? "Add +" : "Add"}</span>
+            <span className="hidden sm:inline">{soldOut ? "Sold out" : !product.variant ? "Choose size" : inCart ? "Add another" : "Add to cart"}</span>
           </button>
           <button
             type="button"
-            onClick={() => {
-              addToCart(product);
-              navigate("/cart");
-            }}
-            className="inline-flex min-h-9 min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-primary px-1 py-1.5 text-[10px] font-semibold text-surface transition hover:bg-primary-dark active:scale-[0.98] sm:min-h-11 sm:gap-2 sm:px-2 sm:py-2 sm:text-sm"
+            onClick={() => add(true)}
+            disabled={soldOut}
+            className="inline-flex min-h-9 min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-primary px-1 py-1.5 text-[10px] font-semibold text-surface transition hover:bg-primary-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-11 sm:gap-2 sm:px-2 sm:py-2 sm:text-sm"
           >
             <span className="sm:hidden">Buy</span>
             <span className="hidden sm:inline">Buy now</span>
             <ArrowRight size={14} aria-hidden="true" className="sm:h-4 sm:w-4" />
           </button>
         </div>
+        {note && <p role="status" className="mt-2 text-xs text-red-700">{note}</p>}
       </div>
     </article>
   );

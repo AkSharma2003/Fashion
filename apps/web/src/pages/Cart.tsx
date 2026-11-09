@@ -200,13 +200,12 @@ export default function Cart() {
                   <span>&#8377;{total.toLocaleString("en-IN")}</span>
                 </div>
 
-                <button
-                  type="button"
-                  disabled
-                  className="min-h-12 w-full cursor-not-allowed rounded-lg bg-gray-200 px-4 py-3 font-semibold text-gray-500"
+                <Link
+                  to="/checkout"
+                  className="flex min-h-12 w-full items-center justify-center rounded-lg bg-primary px-4 py-3 font-semibold text-white hover:opacity-90"
                 >
-                  Checkout coming soon
-                </button>
+                  Checkout
+                </Link>
               </aside>
             </div>
           )}
