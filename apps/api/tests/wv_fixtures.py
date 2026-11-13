@@ -1,9 +1,16 @@
-"""Shared helpers for the WearVerse business tests (SQLite in memory, no Postgres needed)."""
+"""Shared helpers for the WearVerse business tests.
+
+SQLite in memory by default (fast, no setup). Set TEST_DATABASE_URL to a throwaway PostgreSQL database to run the
+same tests on the real database engine (catches column lengths, types and SQL that SQLite lets through):
+
+    TEST_DATABASE_URL=postgresql+psycopg://fashionos:fashionos@localhost:5432/wearverse_test pytest
+"""
+import os
 import uuid
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -19,8 +26,30 @@ from app.modules.khata.models import KhataAccount
 from app.modules.notifications.service import record_optin
 
 
+_PG_URL = os.environ.get("TEST_DATABASE_URL")
+_pg_engine = None
+
+
+def _postgres_engine():
+    """One PostgreSQL engine for the whole run; tables are created once and emptied after every test."""
+    global _pg_engine
+    if _pg_engine is None:
+        assert "test" in _PG_URL or "e2e" in _PG_URL, "TEST_DATABASE_URL must point at a throwaway test database"
+        _pg_engine = create_engine(_PG_URL)
+        Base.metadata.drop_all(_pg_engine)
+        Base.metadata.create_all(_pg_engine)
+    return _pg_engine
+
+
 @pytest.fixture()
 def engine():
+    if _PG_URL:
+        eng = _postgres_engine()
+        yield eng
+        names = ", ".join(f'"{t.name}"' for t in Base.metadata.sorted_tables)
+        with eng.begin() as conn:
+            conn.execute(text(f"TRUNCATE {names} RESTART IDENTITY CASCADE"))
+        return
     eng = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     Base.metadata.create_all(eng)
     yield eng
@@ -50,14 +79,16 @@ def client(engine):
     app.dependency_overrides.clear()
 
 
-def make_user(db: Session, role: str, *, phone: str | None = None, pin: str | None = None) -> StaffUser:
+def make_user(db: Session, role: str, *, phone: str | None = None, pin: str | None = None,
+              password: str | None = None) -> StaffUser:
     r = db.query(Role).filter_by(name=role).first()
     if r is None:
         r = Role(name=role)
         db.add(r)
         db.flush()
     user = StaffUser(full_name=f"{role} user", phone_number=phone or f"9{uuid.uuid4().int % 10**9:09d}",
-                     role_id=r.id, is_active=True, pin_hash=hash_password(pin) if pin else None)
+                     role_id=r.id, is_active=True, pin_hash=hash_password(pin) if pin else None,
+                     password_hash=hash_password(password) if password else None)
     db.add(user)
     db.commit()
     db.refresh(user)

@@ -77,3 +77,26 @@ def test_photo_upload_is_resized(client, db, tmp_path, monkeypatch):
 def test_non_image_photo_rejected(client, db):
     r = client.post("/api/v1/store/me/photo", headers=_login(db), files={"file": ("x.png", b"not an image", "image/png")})
     assert r.status_code == 422
+
+
+# ---- wishlist and bag on the account ----------------------------------------------------
+
+def test_wishlist_and_bag_are_saved_and_merged_at_sign_in(client, db):
+    from tests.wv_fixtures import make_variant
+    a = make_variant(db, name="Silk Saree", qty=3)
+    b = make_variant(db, name="Cotton Saree", qty=3)
+    h = _login(db)
+    client.put("/api/v1/store/me/shopping", headers=h, json={
+        "wishlist": [str(a.product_id)], "cart": [{"variant_id": str(a.id), "qty": 1}]})
+    # Guest picks in the browser, then signs in: both lists are joined, no duplicates.
+    merged = client.post("/api/v1/store/me/shopping/merge", headers=h, json={
+        "wishlist": [str(a.product_id), str(b.product_id)], "cart": [{"variant_id": str(b.id), "qty": 2}]}).json()["data"]
+    assert [w["name"] for w in merged["wishlist"]] == ["Silk Saree", "Cotton Saree"]
+    assert {c["variant"]["id"]: c["qty"] for c in merged["cart"]} == {str(a.id): 1, str(b.id): 2}
+    # Another customer sees nothing of this.
+    other = _login(db, phone="9822222222", email="b@example.com")
+    assert client.get("/api/v1/store/me/shopping", headers=other).json()["data"] == {"wishlist": [], "cart": []}
+
+
+def test_shopping_needs_login(client, db):
+    assert client.get("/api/v1/store/me/shopping").status_code == 401

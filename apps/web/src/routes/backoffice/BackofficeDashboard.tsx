@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Alert, Badge, Button, Card, Loading, Money, Page, Stat, Table } from "../../components/ui";
 import { apiData, post } from "../../lib/api/client";
 import { useApi } from "../../lib/hooks/useApi";
+import { hasRole, useStaff } from "../../lib/auth/staff";
 import { formatDate, formatINR } from "../../lib/money";
 
 type Dashboard = {
@@ -9,12 +10,15 @@ type Dashboard = {
     collections_paise: number; by_mode: Record<string, number> };
   khata_outstanding_paise: number; orders_to_pack: number; fall_pico_open: number; fall_pico_late: number;
   low_stock_variants: number; tally_backlog: number; sync_issues: number;
+  unpaid_orders: number; new_messages: number; customer_requests: number; users_total: number; users_new_7d: number;
+  low_stock_items: { product: string; size: string | null; color: string | null; sku: string; available: number }[];
   alerts: { id: string; kind: string; severity: string; message: string; created_at: string }[];
   recent_bills: { id: string; bill_no: string; total_paise: number; source: string; created_at: string }[];
 };
 
 export default function BackofficeDashboard() {
   const { data, error, loading, reload } = useApi(() => apiData<Dashboard>("/reports/dashboard"));
+  const { me } = useStaff();
 
   return (
     <Page title="Today at the shop" crumb="Dashboard" actions={<Button variant="secondary" onClick={() => void reload()}>Refresh</Button>}>
@@ -35,6 +39,18 @@ export default function BackofficeDashboard() {
             <Link to="/backoffice/inventory"><Stat label="Low stock (≤1 left)" value={data.low_stock_variants} tone={data.low_stock_variants ? "warn" : undefined} /></Link>
             <Link to="/backoffice/tally"><Stat label="Tally waiting / issues" value={`${data.tally_backlog} / ${data.sync_issues}`}
               tone={data.sync_issues ? "bad" : data.tally_backlog ? "warn" : "good"} /></Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <Link to="/backoffice/online-orders"><Stat label="Website orders waiting for payment" value={data.unpaid_orders}
+              note="Released after 30 minutes if unpaid" /></Link>
+            <Link to="/backoffice/online-orders"><Stat label="New website messages" value={data.new_messages}
+              tone={data.new_messages ? "warn" : undefined} note="From the Contact page" /></Link>
+            <Link to="/backoffice/ai"><Stat label="Customer requests" value={data.customer_requests}
+              note="Items customers asked for that we don't have" /></Link>
+            {hasRole(me, "Manager") && (
+              <Link to="/backoffice/users"><Stat label="Registered users" value={data.users_total}
+                note={`${data.users_new_7d} new this week · give staff roles`} /></Link>
+            )}
           </div>
 
           <div className="grid gap-6 xl:grid-cols-2">
@@ -64,6 +80,16 @@ export default function BackofficeDashboard() {
               )}
             </Card>
           </div>
+
+          <Card title="Running out" actions={<Link className="text-sm underline" to="/backoffice/inventory">All stock</Link>}>
+            <Table rows={data.low_stock_items} rowKey={(i) => i.sku} empty="Nothing is running out." columns={[
+              { key: "p", label: "Product", render: (i) => <span className="font-medium">{i.product}</span> },
+              { key: "v", label: "Size / colour", render: (i) => [i.size, i.color].filter(Boolean).join(" / ") || "—" },
+              { key: "sku", label: "SKU", render: (i) => <span className="font-mono text-xs">{i.sku}</span> },
+              { key: "a", label: "Left", align: "right", render: (i) => (
+                <Badge tone={i.available <= 0 ? "bad" : "warn"}>{i.available <= 0 ? "Out of stock" : `${i.available} left`}</Badge>) },
+            ]} />
+          </Card>
 
           <Card title="Latest bills" actions={<Link className="text-sm underline" to="/backoffice/bills">All bills</Link>}>
             <Table rows={data.recent_bills} rowKey={(b) => b.id} empty="No bills yet." columns={[

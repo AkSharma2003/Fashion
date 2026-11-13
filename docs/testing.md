@@ -3,24 +3,15 @@
 ## Run
 
 ```bash
-cd apps/api && pytest                 # 97 tests; 2 need the Docker PostgreSQL (tests/test_auth_repository.py)
-cd apps/web && npx tsc --noEmit       # web type check
-pnpm build:web                        # web production build
+cd apps/api && pytest                 # 126 tests on SQLite (fast)
+# Same tests on PostgreSQL (catches column lengths and SQL that SQLite lets through) — do this before a release:
+docker compose exec -T db psql -U fashionos -d postgres -c "CREATE DATABASE wearverse_test OWNER fashionos;"
+TEST_DATABASE_URL=postgresql+psycopg://fashionos:fashionos@localhost:5432/wearverse_test pytest
+sh tests/e2e/run.sh                   # one full shop day end to end on a fresh throwaway database (32 steps)
+cd apps/web && npx tsc -p tsconfig.app.json --noEmit && npx vite build
 ```
 
-Most API tests use an in-memory SQLite database (`tests/wv_fixtures.py`) and call services directly or through
-FastAPI's test client. The AI service is never running in tests: `assist.gateway.ask` returns `None`, so every
-AI feature is tested on its fallback (T32).
-
-| File | Tests | Covers |
-|---|---|---|
-| `test_srs_business_rules.py` | 33 | SRS test cases (below), GST split, bill series, server price, offline oversell, parallel run |
-| `test_ai_phase2_3.py` | 14 | Recommendations, Hinglish search, size, visual search, forecast, what to buy, purchase orders, chatbot (T32, T33), descriptions, posters, AI budget |
-| `test_api_access.py` | 8 | Roles over HTTP (T29, T20, T21), error envelope, catalog login, Tally key, POS + khata over HTTP, store checkout |
-| `test_customer_registration.py`, `test_website_registration_*.py` | 31 | Customer records, website registration with OTP |
-| `test_validator.py` | 3 | WhatsApp text validator |
-| `test_money.py`, `test_core_models.py`, `test_health.py` | 6 | Money formatting, core models, health |
-| `test_auth_repository.py` | 2 | Role / staff repositories on PostgreSQL |
+Tests use an in-memory stand-in for Redis (`tests/conftest.py`), so they never depend on or fill a real Redis.
 
 ## SRS test cases (section 13)
 

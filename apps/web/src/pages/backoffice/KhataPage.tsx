@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Alert, Badge, Button, Card, Field, Input, Loading, Modal, Money, Page, Select, Stat, Table } from "../../components/ui";
 import { apiData, patch, post } from "../../lib/api/client";
 import { hasRole, useStaff } from "../../lib/auth/staff";
@@ -22,7 +23,9 @@ export default function KhataPage() {
   const [onlyDue, setOnlyDue] = useState(false);
   const list = useApi(() => apiData<{ total_outstanding_paise: number; accounts: Account[] }>(
     `/khata/accounts?only_due=${onlyDue}${q ? `&q=${encodeURIComponent(q)}` : ""}`), [onlyDue]);
-  const [openId, setOpenId] = useState<string | null>(null);
+  // "?account=<id>" (e.g. from the Users page) opens that customer's khata straight away.
+  const [params, setParams] = useSearchParams();
+  const [openId, setOpenId] = useState<string | null>(params.get("account"));
   const [newOpen, setNewOpen] = useState(false);
 
   return (
@@ -50,7 +53,7 @@ export default function KhataPage() {
           ]} />
         )}
       </Card>
-      {openId && <LedgerModal accountId={openId} onClose={() => { setOpenId(null); void list.reload(); }} />}
+      {openId && <LedgerModal accountId={openId} onClose={() => { setOpenId(null); if (params.get("account")) setParams({}); void list.reload(); }} />}
       <NewAccountModal open={newOpen} onClose={() => setNewOpen(false)} onSaved={() => { setNewOpen(false); void list.reload(); }} />
     </Page>
   );

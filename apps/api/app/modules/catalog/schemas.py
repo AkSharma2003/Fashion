@@ -50,6 +50,8 @@ class ProductResponse(BaseModel):
 
 # Variants as the product screens use them (size / colour / price / stock).
 class CatalogVariantCreate(BaseModel):
+    # Shop whose stock the quantity is for (default: the user's shop, else the shop picked in the header, else main).
+    shop_id: UUID | None = None
     size: str = Field(default="", max_length=50)
     color: str = Field(default="", max_length=50)
     sku: str = Field(min_length=1, max_length=64)
@@ -61,6 +63,8 @@ class CatalogVariantCreate(BaseModel):
 
 
 class CatalogVariantUpdate(BaseModel):
+    # Shop whose stock the quantity is for (default: the user's shop, else the shop picked in the header, else main).
+    shop_id: UUID | None = None
     size: str | None = Field(default=None, max_length=50)
     color: str | None = Field(default=None, max_length=50)
     sku: str | None = Field(default=None, min_length=1, max_length=64)

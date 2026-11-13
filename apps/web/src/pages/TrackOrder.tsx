@@ -43,7 +43,7 @@ export default function TrackOrder() {
       <Header />
       <main className="min-h-screen bg-background px-4 py-10 text-main_text">
         <div className="mx-auto max-w-2xl space-y-5">
-          <h1 className="font-primaryFont text-3xl font-semibold">Track your order</h1>
+          <h1 className="sr-only">Track your order</h1>
           <form onSubmit={find} className="grid gap-3 rounded-2xl border border-divider bg-white p-5 sm:grid-cols-[1fr_1fr_auto]">
             <Field label="Order number"><Input value={orderNo} onChange={(e) => setOrderNo(e.target.value)} placeholder="WV-000123" /></Field>
             <Field label="Mobile"><Input inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} /></Field>

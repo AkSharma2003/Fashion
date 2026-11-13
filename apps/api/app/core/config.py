@@ -70,6 +70,9 @@ class Settings(BaseSettings):
     image_storage_public_base_url: str = ""
     image_storage_max_file_size_mb: int = 5
 
+    # Name customers see on the website, e-mails, chat and SEO pages (the software itself is WearVerse).
+    store_name: str = "WearVerse"
+
     # Google sign-in for website customers (OAuth client id from Google Cloud console; empty = off)
     google_client_id: str = ""
 

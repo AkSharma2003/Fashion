@@ -1,3 +1,4 @@
+import { STORE_NAME } from "../lib/brand";
 import { Link } from "react-router-dom";
 
 const currentYear = new Date().getFullYear();
@@ -22,7 +23,7 @@ function Footer() {
               className="text-center font-primaryFont text-xl font-semibold text-white sm:text-left sm:text-2xl"
             >
               <Link to="/" onClick={scrollToTop}>
-                WearVerse
+                {STORE_NAME}
               </Link>
             </h2>
 
@@ -251,7 +252,7 @@ function Footer() {
 
         {/* Copyright */}
         <p className="mt-5 text-center text-xs text-[#F5E9EC]/60 sm:text-sm">
-          © {currentYear} WearVerse. All rights reserved.
+          © {currentYear} {STORE_NAME}. All rights reserved.
         </p>
       </div>
     </footer>

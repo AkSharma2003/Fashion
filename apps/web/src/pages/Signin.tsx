@@ -1,10 +1,13 @@
+import { STORE_NAME } from "../lib/brand";
 import { FormEvent, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { api, errorMessage, post } from "../lib/api/client";
-import { clearSession, setCustomerToken } from "../lib/auth/session";
+import { clearSession, getCustomerToken, setCustomerToken } from "../lib/auth/session";
+import { clearLocalShopping, mergeOnSignIn } from "../lib/shoppingSync";
+import { publishProfile } from "../lib/customer";
 
 /** Website registration: details → 6-digit code sent to the e-mail (and SMS) → account created → signed in. */
 
@@ -13,7 +16,6 @@ const REGISTER = "/customers/customers/website/register";
 const VERIFY = "/customers/customers/website/verify-otp";
 
 export default function Signin() {
-  const navigate = useNavigate();
   const [form, setForm] = useState({ full_name: "", email: "", phone_number: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState<"details" | "otp">("details");
@@ -52,8 +54,11 @@ export default function Signin() {
       // Account is ready: sign in straight away.
       const r = await post<{ kind: string; access_token: string }>("/auth/sign-in", { login: form.email.trim(), password: form.password });
       clearSession();
+      publishProfile(null);
+      if (getCustomerToken()) clearLocalShopping();
       setCustomerToken(r.access_token);
-      navigate("/account", { replace: true });
+      await mergeOnSignIn();
+      window.location.replace("/");              // new customers start on the home page
     } catch (caught) {
       setError(errorMessage(caught, "Could not verify the code. Please try again."));
     } finally {
@@ -67,7 +72,7 @@ export default function Signin() {
       <main className="flex min-h-[calc(100svh-5rem)] items-start justify-center bg-linear-to-br from-background to-Alt_background px-3 py-6 sm:items-center sm:px-4 sm:py-12">
         <section className="w-full max-w-md rounded-xl border border-gray-100 bg-white p-5 shadow-xl sm:rounded-2xl sm:p-9">
           <div className="mb-6 text-center sm:mb-8">
-            <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-primary">Join WearVerse</p>
+            <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-primary">Join {STORE_NAME}</p>
             <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
               {step === "details" ? "Create your account" : "Enter the code"}
             </h1>

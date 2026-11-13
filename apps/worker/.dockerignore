@@ -1,0 +1,13 @@
+# Never bake secrets or local machine files into the image; settings come from the environment at run time.
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+media/
+*.log
+.DS_Store

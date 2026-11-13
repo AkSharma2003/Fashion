@@ -21,7 +21,7 @@ Rule: requirements live in the SRS. Change the SRS first, then these docs, then 
 | [architecture/flows.md](architecture/flows.md) | POS khata sale, offline POS, Pay Now, website order, WhatsApp, Tally, salary, fall-pico, purchasing |
 | [architecture/ai.md](architecture/ai.md) | AI features, gateway, fallbacks, budget, privacy |
 | [api/README.md](api/README.md) | Response format, error codes, auth, roles, idempotency, example |
-| [api/endpoints.md](api/endpoints.md) | All 178 endpoints (generated: `python -m scripts.gen_api_docs`) |
+| [api/endpoints.md](api/endpoints.md) | All 192 endpoints (generated: `python -m scripts.gen_api_docs`) |
 | [testing.md](testing.md) | Test suites and SRS test cases T01–T41: automated vs manual |
 | [security.md](security.md) | Controls in the code and the go-live security checklist |
 
@@ -54,3 +54,4 @@ Rule: requirements live in the SRS. Change the SRS first, then these docs, then 
 | [0004](adr/0004-ai-gateway-and-fallbacks.md) | AI through one gateway, always with a fallback |
 | [0005](adr/0005-seo-dynamic-rendering.md) | SEO with server-rendered pages for bots |
 | [0006](adr/0006-money-in-paise-gst-inclusive.md) | Money in paise, prices include GST |
+| [0007](adr/0007-three-shops.md) | Three shops (Sethi Saree Sansar, Sethi Suit, Sethi Kids), each its own GST business |

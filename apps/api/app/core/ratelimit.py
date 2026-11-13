@@ -12,11 +12,19 @@ from app.core.errors import BusinessError
 log = logging.getLogger("wearverse.ratelimit")
 
 
+def client_ip(request: Request) -> str:
+    """The caller's IP. Behind Caddy, the proxy appends the real address as the LAST X-Forwarded-For entry;
+    earlier entries are whatever the client sent and must not be trusted (they could dodge the limit)."""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[-1].strip()
+    return request.client.host if request.client else "?"
+
+
 def rate_limit(name: str, limit: int, window_seconds: int):
     def dependency(request: Request) -> None:
         from app.core.redis import redis_client
-        client_ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else "?")
-        key = f"wearverse:rl:{name}:{client_ip.split(',')[0].strip()}"
+        key = f"wearverse:rl:{name}:{client_ip(request)}"
         try:
             count = redis_client.incr(key)
             if count == 1:

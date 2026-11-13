@@ -26,6 +26,7 @@ from app.modules.auth.models import StaffUser
 from app.core.audit import write_audit
 from app.modules.catalog.schemas import CatalogVariantCreate, CatalogVariantUpdate
 from app.modules.inventory import stock
+from app.modules.shops.service import acting_shop, header_shop
 from app.modules.inventory.models import Barcode, ProductVariant, StockLevel
 from app.modules.catalog.image_storage import (
     upload_product_image,
@@ -55,16 +56,40 @@ ALLOWED_IMAGE_TYPES = {
 }
 
 
-@router.get("/", response_model=list[ProductResponse])
+@router.get("/")
 def list_products(
+    include_inactive: bool = False,
     db: Session = Depends(get_db),
-) -> list[Product]:
-    statement = (
-        select(Product)
-        .where(Product.is_active.is_(True))
-        .order_by(Product.name)
-    )
-    return list(db.scalars(statement).all())
+    x_shop_id: str | None = Depends(header_shop),
+) -> list[dict]:
+    """Back-office product list with stock on hand, variant count, colours and first photo.
+    `include_inactive=true` also returns archived products."""
+    statement = select(Product).order_by(Product.name)
+    if not include_inactive:
+        statement = statement.where(Product.is_active.is_(True))
+    products = list(db.scalars(statement).all())
+    ids = [p.id for p in products]
+    variants = db.scalars(select(ProductVariant).where(ProductVariant.product_id.in_(ids),
+                                                       ProductVariant.is_active.is_(True))).all() if ids else []
+    # Stock of the shop picked in the back-office header, or all shops together.
+    shop_filter = UUID(x_shop_id) if x_shop_id and x_shop_id != "all" else None
+    sums = stock.totals(db, [v.id for v in variants], shop_filter)
+    first_image: dict = {}
+    for img in db.scalars(select(ProductImage).where(ProductImage.product_id.in_(ids))
+                          .order_by(ProductImage.created_at)).all() if ids else []:
+        first_image.setdefault(img.product_id, img.object_key)
+    out = []
+    for p in products:
+        mine = [v for v in variants if v.product_id == p.id]
+        row = ProductResponse.model_validate(p).model_dump(mode="json")
+        row.update({
+            "variant_count": len(mine),
+            "stock_on_hand": sum(sums.get(v.id, (0, 0))[0] for v in mine),
+            "colors": sorted({v.color for v in mine if v.color}),
+            "image_url": get_product_image_url(first_image[p.id]) if p.id in first_image else None,
+        })
+        out.append(row)
+    return out
 
 
 @router.get("/{product_id}", response_model=ProductResponse)
@@ -420,7 +445,9 @@ def remove_product_image(
 # ---- Variants (size / colour) with price and shared stock ---------------------------------
 
 def _variant_out(db: Session, variant: ProductVariant, product: Product) -> dict:
-    level = db.scalar(select(StockLevel).where(StockLevel.variant_id == variant.id))
+    per_shop = stock.by_shop(db, variant.id)
+    on_hand = sum(lv.on_hand for lv in per_shop)
+    reserved = sum(lv.reserved for lv in per_shop)
     barcode = db.scalar(select(Barcode).where(Barcode.variant_id == variant.id))
     return {
         "id": str(variant.id),
@@ -432,9 +459,11 @@ def _variant_out(db: Session, variant: ProductVariant, product: Product) -> dict
         "selling_price_paise": stock.variant_price(variant, product),
         "mrp_paise": variant.mrp_paise or product.mrp_paise,
         "cost_paise": variant.cost_paise,
-        "stock_quantity": max((level.on_hand - level.reserved) if level else 0, 0),
-        "on_hand": level.on_hand if level else 0,
-        "reserved": level.reserved if level else 0,
+        "stock_quantity": max(on_hand - reserved, 0),          # all shops together
+        "on_hand": on_hand,
+        "reserved": reserved,
+        "by_shop": [{"shop_id": str(lv.shop_id), "on_hand": lv.on_hand, "available": max(lv.on_hand - lv.reserved, 0)}
+                    for lv in per_shop],
         "is_active": variant.is_active,
     }
 
@@ -469,6 +498,7 @@ def create_catalog_variant(
     payload: CatalogVariantCreate,
     db: Session = Depends(get_db),
     current_user: StaffUser = Depends(require_staff()),
+    x_shop_id: str | None = Depends(header_shop),
 ) -> dict:
     product = _get_product_or_404(db, product_id)
     if db.scalar(select(ProductVariant).where(ProductVariant.sku == payload.sku)):
@@ -485,10 +515,11 @@ def create_catalog_variant(
         db.flush()
         # Every variant gets a scannable code: the given barcode, else its SKU.
         db.add(Barcode(variant_id=variant.id, code=payload.barcode or payload.sku))
-        stock.lock_level(db, variant.id)
+        shop_id = acting_shop(db, current_user, payload.shop_id or x_shop_id)
+        stock.lock_level(db, variant.id, shop_id)
         if payload.stock_quantity:
             stock.move(db, variant.id, payload.stock_quantity, "opening", source="adjustment",
-                       reason="Opening stock", actor_id=str(current_user.id))
+                       reason="Opening stock", actor_id=str(current_user.id), shop_id=shop_id)
         write_audit(db, actor_id=str(current_user.id), action="create", entity="variant",
                     entity_id=str(variant.id), new_value={"sku": payload.sku, "stock": payload.stock_quantity})
         db.commit()
@@ -505,6 +536,7 @@ def update_catalog_variant(
     payload: CatalogVariantUpdate,
     db: Session = Depends(get_db),
     current_user: StaffUser = Depends(require_staff()),
+    x_shop_id: str | None = Depends(header_shop),
 ) -> dict:
     product = _get_product_or_404(db, product_id)
     variant = _get_variant_or_404(db, product_id, variant_id)
@@ -533,12 +565,13 @@ def update_catalog_variant(
                 db.add(Barcode(variant_id=variant.id, code=data["barcode"]))
         if data.get("stock_quantity") is not None:
             # The screen edits "available"; write the difference as an adjustment movement.
-            level = stock.lock_level(db, variant.id)
+            shop_id = acting_shop(db, current_user, data.get("shop_id") or x_shop_id)
+            level = stock.lock_level(db, variant.id, shop_id)
             delta = data["stock_quantity"] - (level.on_hand - level.reserved)
             if delta:
                 stock.move(db, variant.id, delta, "adjustment", source="adjustment",
                            reason="Edited on product screen", actor_id=str(current_user.id),
-                           allow_negative=False)
+                           allow_negative=False, shop_id=shop_id)
         db.flush()
         write_audit(db, actor_id=str(current_user.id), action="update", entity="variant",
                     entity_id=str(variant.id), old_value=old, new_value=data)
@@ -563,3 +596,96 @@ def deactivate_catalog_variant(
                 entity_id=str(variant.id))
     db.commit()
     return _variant_out(db, variant, product)
+
+
+
+# ---------------------------------------------------------------------------
+# Delete. A product (or variant) is removed for good only when nothing was ever sold, bought, counted
+# or moved in stock for it. Otherwise its history must stay (bills, ledgers, Tally, GST), so it is archived:
+# hidden from the shop, the POS and this list, and it can be restored later.
+# ---------------------------------------------------------------------------
+from sqlalchemy import delete as sa_delete, exists  # noqa: E402
+
+from app.modules.auth.dependencies import MANAGER, require_role  # noqa: E402
+
+
+def _has_history(db: Session, variant_ids: list) -> bool:
+    if not variant_ids:
+        return False
+    from app.modules.fall_pico.models import FpJob
+    from app.modules.inventory.models import StockCount, StockMovement
+    from app.modules.orders.models import OrderItem
+    from app.modules.pos.models import BillItem
+    from app.modules.purchasing.models import PurchaseItem, PurchaseOrderItem
+    for model in (StockMovement, BillItem, OrderItem, PurchaseItem, PurchaseOrderItem, FpJob, StockCount):
+        if db.scalar(select(exists().where(model.variant_id.in_(variant_ids)))):
+            return True
+    return False
+
+
+def _purge_variants(db: Session, variant_ids: list) -> None:
+    from app.modules.assist.models import Forecast
+    from app.modules.tally.models import TallyItemMap
+    for model in (Barcode, StockLevel, Forecast, TallyItemMap):
+        db.execute(sa_delete(model).where(model.variant_id.in_(variant_ids)))
+    db.execute(sa_delete(ProductVariant).where(ProductVariant.id.in_(variant_ids)))
+
+
+@router.delete("/{product_id}/permanent")
+def delete_product_permanently(
+    product_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: StaffUser = Depends(require_role(MANAGER)),
+) -> dict:
+    product = db.get(Product, product_id)
+    if product is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found.")
+    variant_ids = list(db.scalars(select(ProductVariant.id).where(ProductVariant.product_id == product.id)))
+    if _has_history(db, variant_ids):
+        product.is_active = False
+        write_audit(db, actor_id=str(current_user.id), action="product.archive", entity="product",
+                    entity_id=str(product.id), new_value={"reason": "has history"})
+        db.commit()
+        return {"deleted": False, "archived": True,
+                "message": f'"{product.name}" has stock or sales history, so it was archived instead of deleted. '
+                           "It is hidden from the shop and the POS; you can restore it from \"Show archived\"."}
+    from app.modules.assist.models import ProductSignature
+    images = list(db.scalars(select(ProductImage).where(ProductImage.product_id == product.id)))
+    for img in images:
+        try:
+            delete_product_image(img.object_key)
+        except Exception:
+            pass   # the database row goes anyway; a stray file in storage is harmless
+    db.execute(sa_delete(ProductImage).where(ProductImage.product_id == product.id))
+    db.execute(sa_delete(ProductSignature).where(ProductSignature.product_id == product.id))
+    _purge_variants(db, variant_ids)
+    write_audit(db, actor_id=str(current_user.id), action="product.delete", entity="product",
+                entity_id=str(product.id), old_value={"name": product.name, "sku": product.sku})
+    db.delete(product)
+    db.commit()
+    return {"deleted": True, "archived": False, "message": f'"{product.name}" was deleted.'}
+
+
+@router.delete("/{product_id}/variants/{variant_id}/permanent")
+def delete_variant_permanently(
+    product_id: UUID,
+    variant_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: StaffUser = Depends(require_role(MANAGER)),
+) -> dict:
+    variant = db.get(ProductVariant, variant_id)
+    if variant is None or variant.product_id != product_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Variant not found.")
+    label = " / ".join(x for x in (variant.size, variant.color) if x) or variant.sku
+    if _has_history(db, [variant.id]):
+        variant.is_active = False
+        write_audit(db, actor_id=str(current_user.id), action="variant.archive", entity="variant",
+                    entity_id=str(variant.id), new_value={"reason": "has history"})
+        db.commit()
+        return {"deleted": False, "archived": True,
+                "message": f"{label} has stock or sales history, so it was hidden instead of deleted."}
+    write_audit(db, actor_id=str(current_user.id), action="variant.delete", entity="variant",
+                entity_id=str(variant.id), old_value={"sku": variant.sku})
+    _purge_variants(db, [variant.id])
+    db.commit()
+    return {"deleted": True, "archived": False, "message": f"{label} was deleted."}

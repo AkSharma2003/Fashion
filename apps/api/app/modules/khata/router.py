@@ -165,6 +165,9 @@ from app.core.app_settings import get_setting
 from app.core.errors import BusinessError, not_found, ok
 from app.core.money import format_inr
 from app.modules.auth.dependencies import ACCOUNTANT, CASHIER, MANAGER, require_staff
+
+# Khata balances are private: only the counter, managers and accounts see them (not supervisors or online staff).
+khata_staff = require_role(CASHIER, MANAGER, ACCOUNTANT)
 from app.modules.customers.models import Customer
 from app.modules.khata import ledger
 from app.modules.khata.models import KhataAccount, LedgerAllocation, LedgerEntry
@@ -235,7 +238,7 @@ def _entry_out(e: LedgerEntry) -> dict:
 
 @router.get("/accounts")
 def list_accounts(q: str | None = None, only_due: bool = False, db: Session = Depends(get_db),
-                  current_user: StaffUser = Depends(require_staff())):
+                  current_user: StaffUser = Depends(khata_staff)):
     stmt = (select(KhataAccount, Customer).join(Customer, Customer.id == KhataAccount.customer_id)
             .order_by(KhataAccount.balance_paise.desc()))
     if q:
@@ -286,7 +289,7 @@ def open_account(payload: AccountOpen, db: Session = Depends(get_db),
 
 
 @router.get("/accounts/{account_id}")
-def get_account(account_id: UUID, db: Session = Depends(get_db), current_user: StaffUser = Depends(require_staff())):
+def get_account(account_id: UUID, db: Session = Depends(get_db), current_user: StaffUser = Depends(khata_staff)):
     account = db.get(KhataAccount, account_id)
     if account is None:
         raise not_found("Khata account")
@@ -318,7 +321,7 @@ def update_account(account_id: UUID, payload: AccountUpdate, db: Session = Depen
 
 
 @router.get("/accounts/{account_id}/ledger")
-def get_ledger(account_id: UUID, db: Session = Depends(get_db), current_user: StaffUser = Depends(require_staff())):
+def get_ledger(account_id: UUID, db: Session = Depends(get_db), current_user: StaffUser = Depends(khata_staff)):
     account = db.get(KhataAccount, account_id)
     if account is None:
         raise not_found("Khata account")
@@ -384,7 +387,7 @@ def adjust(account_id: UUID, payload: Adjustment, db: Session = Depends(get_db),
 
 @router.post("/accounts/{account_id}/paylink")
 def make_paylink(account_id: UUID, send_whatsapp: bool = False, db: Session = Depends(get_db),
-                 current_user: StaffUser = Depends(require_staff())):
+                 current_user: StaffUser = Depends(khata_staff)):
     account = db.get(KhataAccount, account_id)
     if account is None:
         raise not_found("Khata account")
@@ -400,7 +403,7 @@ def make_paylink(account_id: UUID, send_whatsapp: bool = False, db: Session = De
 
 
 @router.get("/lookup")
-def lookup_by_phone(phone: str, db: Session = Depends(get_db), current_user: StaffUser = Depends(require_staff())):
+def lookup_by_phone(phone: str, db: Session = Depends(get_db), current_user: StaffUser = Depends(khata_staff)):
     phone = phone.strip()
     customer = db.scalar(select(Customer).where(Customer.phone_number == phone))
     if customer is None:
@@ -430,3 +433,61 @@ def ageing_report(db: Session = Depends(get_db), current_user: StaffUser = Depen
 @router.get("/integrity")
 def integrity(db: Session = Depends(get_db), current_user: StaffUser = Depends(require_role(ACCOUNTANT))):
     return ok({"problems": ledger.integrity_check(db), "checked_at": datetime.now(timezone.utc).isoformat()})
+
+
+
+# ---------------------------------------------------------------------------
+# Customer type: every customer is "normal" until a khata (credit) account is opened for them.
+# ---------------------------------------------------------------------------
+class MakeKhataIn(BaseModel):
+    credit_limit_paise: int | None = Field(default=None, ge=0)
+    credit_days: int | None = Field(default=None, ge=0, le=365)
+    whatsapp_optin: bool = True
+    language: str = Field(default="hinglish", pattern="^(english|hindi|hinglish)$")
+
+
+@router.post("/customers/{customer_id}/make-khata")
+def make_khata_customer(customer_id: UUID, payload: MakeKhataIn, db: Session = Depends(get_db),
+                        current_user: StaffUser = Depends(require_role(MANAGER))):
+    """Give a normal customer a khata (credit) account, or switch their old one back on."""
+    customer = db.get(Customer, customer_id)
+    if customer is None:
+        raise not_found("Customer")
+    account = db.scalar(select(KhataAccount).where(KhataAccount.customer_id == customer.id)
+                        .order_by(KhataAccount.is_active.desc(), KhataAccount.created_at.desc()))
+    if account is not None and account.is_active:
+        raise BusinessError("DUPLICATE", f"{customer.full_name} is already a khata customer.", 409)
+    if account is None:
+        account = KhataService(db).create(customer_id=customer.id)
+    else:
+        account.is_active = True
+    account.credit_limit_paise = payload.credit_limit_paise if payload.credit_limit_paise is not None \
+        else int(get_setting(db, "khata_default_limit_paise"))
+    account.credit_days = payload.credit_days if payload.credit_days is not None \
+        else int(get_setting(db, "khata_default_credit_days"))
+    db.flush()
+    record_optin(db, customer.id, opted_in=payload.whatsapp_optin, language=payload.language,
+                 recorded_by=str(current_user.id))
+    write_audit(db, actor_id=str(current_user.id), action="make_khata", entity="customer", entity_id=str(customer.id),
+                new_value={"credit_limit_paise": account.credit_limit_paise, "credit_days": account.credit_days})
+    db.commit()
+    return ok(_account_out(db, account, customer))
+
+
+@router.post("/customers/{customer_id}/make-normal")
+def make_normal_customer(customer_id: UUID, db: Session = Depends(get_db),
+                         current_user: StaffUser = Depends(require_role(MANAGER))):
+    """Stop credit for a customer. Only when nothing is owed; the ledger history stays."""
+    account = db.scalar(select(KhataAccount).where(KhataAccount.customer_id == customer_id,
+                                                   KhataAccount.is_active.is_(True)))
+    if account is None:
+        raise BusinessError("NOT_FOUND", "This customer has no active khata.", 404)
+    if account.balance_paise != 0:
+        what = "owes" if account.balance_paise > 0 else "has an advance of"
+        raise BusinessError("VALIDATION_ERROR",
+                            f"The customer still {what} {format_inr(abs(account.balance_paise))}. Settle it before closing the khata.", 422)
+    account.is_active = False
+    write_audit(db, actor_id=str(current_user.id), action="make_normal", entity="customer", entity_id=str(customer_id),
+                old_value={"khata_account": str(account.id)})
+    db.commit()
+    return ok({"customer_id": str(customer_id), "type": "normal"})

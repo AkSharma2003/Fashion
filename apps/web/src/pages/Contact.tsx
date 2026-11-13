@@ -35,9 +35,7 @@ export default function Contact() {
         <div className="mx-auto grid w-full max-w-5xl gap-8 md:grid-cols-[0.85fr_1.15fr] md:gap-12">
           <section className="pt-2">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">We’re here to help</p>
-            <h1 className="mt-3 font-primaryFont text-3xl font-semibold text-main_text sm:text-4xl">
-              Contact Us
-            </h1>
+            <h1 className="sr-only">Contact us</h1>
             <p className="mt-4 max-w-md leading-7 text-text">
               Have a question about an order, a product, or sizing? Send us a message and our team will get back to you.
             </p>

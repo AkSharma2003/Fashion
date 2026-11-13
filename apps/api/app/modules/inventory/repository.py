@@ -64,9 +64,11 @@ def get_stock_level(
     db: Session,
     variant_id: UUID,
     for_update: bool = False,
+    shop_id: UUID | None = None,
 ) -> StockLevel | None:
+    from app.modules.inventory.stock import _shop
     statement = select(StockLevel).where(
-        StockLevel.variant_id == variant_id
+        StockLevel.variant_id == variant_id, StockLevel.shop_id == _shop(db, shop_id)
     )
 
     if for_update:
@@ -78,9 +80,12 @@ def get_stock_level(
 def create_stock_level(
     db: Session,
     variant_id: UUID,
+    shop_id: UUID | None = None,
 ) -> StockLevel:
+    from app.modules.inventory.stock import _shop
     level = StockLevel(
         variant_id=variant_id,
+        shop_id=_shop(db, shop_id),
         on_hand=0,
         reserved=0,
     )
@@ -92,8 +97,11 @@ def create_stock_level(
 def list_stock_levels(
     db: Session,
     variant_id: UUID | None = None,
+    shop_id: UUID | None = None,
 ) -> list[StockLevel]:
     statement = select(StockLevel)
+    if shop_id is not None:
+        statement = statement.where(StockLevel.shop_id == shop_id)
 
     if variant_id is not None:
         statement = statement.where(
@@ -130,9 +138,11 @@ def create_stock_count(
     expected_quantity: int,
     counted_quantity: int,
     reason: str | None = None,
+    shop_id: UUID | None = None,
 ) -> StockCount:
     stock_count = StockCount(
         variant_id=variant_id,
+        shop_id=shop_id,
         expected_quantity=expected_quantity,
         counted_quantity=counted_quantity,
         reason=reason,

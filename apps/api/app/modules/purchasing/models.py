@@ -29,6 +29,7 @@ class Purchase(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     purchase_no: Mapped[str] = mapped_column(String(24), unique=True)
     supplier_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("suppliers.id"), index=True)
+    shop_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("shops.id"), nullable=True, index=True)   # buying shop
     supplier_bill_no: Mapped[str] = mapped_column(String(64))
     bill_date: Mapped[date] = mapped_column(Date)
     taxable_paise: Mapped[int] = mapped_column(Integer, default=0)
@@ -60,6 +61,7 @@ class PurchaseOrder(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     po_no: Mapped[str] = mapped_column(String(24), unique=True)
     supplier_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("suppliers.id"), index=True)
+    shop_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("shops.id"), nullable=True, index=True)   # buying shop
     status: Mapped[str] = mapped_column(String(12), default="DRAFT", index=True)   # DRAFT | SENT | RECEIVED | CANCELLED
     expected_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     total_paise: Mapped[int] = mapped_column(Integer, default=0)

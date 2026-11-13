@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.app_settings import get_setting
+from app.core.config import settings
 from app.core.errors import not_found
 from app.modules.assist import gateway
 from app.modules.assist.text import tokenize
@@ -38,7 +39,7 @@ def describe(db: Session, product_id: UUID, notes: str | None, language: str = "
         return {"title": ai["title"][:200], "description": ai["description"][:2000], "tags": tags, "source": "ai"}
     words = [w for w in tokenize(f"{product.name} {notes or ''}") if len(w) > 2]
     colours = ", ".join(facts["colours"]) or "beautiful shades"
-    desc = (f"{product.name} from WearVerse. Available in {colours}"
+    desc = (f"{product.name} from {settings.store_name}. Available in {colours}"
             + (f", sizes {', '.join(facts['sizes'])}" if facts["sizes"] else "")
             + ". " + (notes.strip() + " " if notes else "")
             + ("Free fall-pico on this saree. " if facts["fall_pico"] else "")
@@ -60,7 +61,7 @@ def suggest_copy(db: Session, brief: str, language: str) -> dict:
     ai = gateway.ask(db, "poster", "/ai/poster/copy", {"brief": brief, "language": language}, timeout=15)
     if ai and isinstance(ai.get("options"), list):
         return {"options": [o for o in ai["options"] if isinstance(o, dict)][:4], "source": "ai"}
-    return {"options": [{"headline": brief[:40], "subline": "Visit WearVerse today"}], "source": "fallback"}
+    return {"options": [{"headline": brief[:40], "subline": f"Visit {settings.store_name} today"}], "source": "fallback"}
 
 
 def _wrap(text: str, width: int) -> list[str]:
@@ -81,7 +82,7 @@ def render_poster(db: Session, *, headline: str, subline: str, footer: str | Non
     """SVG poster: exact text from staff + product photos. Staff download it as SVG or PNG."""
     w, h = SIZES.get(size, SIZES["square"])
     t = THEMES.get(theme, THEMES["festive"])
-    shop = escape(str(get_setting(db, "shop_name") or "WearVerse"))
+    shop = escape(str(get_setting(db, "shop_name") or settings.store_name))
     photos = []
     for pid in product_ids[:3]:
         image = db.scalar(select(ProductImage).where(ProductImage.product_id == pid).order_by(ProductImage.created_at))

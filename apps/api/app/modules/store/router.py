@@ -80,10 +80,8 @@ def _product_card(db: Session, p: Product) -> dict:
     variants = db.scalars(select(ProductVariant).where(ProductVariant.product_id == p.id,
                                                        ProductVariant.is_active.is_(True))).all()
     prices = [stock.variant_price(v, p) for v in variants] or [p.selling_price_paise]
-    available = 0
-    for v in variants:
-        level = db.scalar(select(StockLevel).where(StockLevel.variant_id == v.id))
-        available += max((level.on_hand - level.reserved) if level else 0, 0)
+    sums = stock.totals(db, [v.id for v in variants])          # all shops: the website sells from each
+    available = sum(max(sums.get(v.id, (0, 0))[1], 0) for v in variants)
     image = db.scalar(select(ProductImage).where(ProductImage.product_id == p.id).order_by(ProductImage.created_at))
     return {"id": str(p.id), "name": p.name, "category": p.category, "description": p.description,
             "price_from_paise": min(prices), "price_to_paise": max(prices), "mrp_paise": p.mrp_paise,
@@ -95,9 +93,8 @@ def _product_card(db: Session, p: Product) -> dict:
 
 
 def _variant_out(db: Session, v: ProductVariant, p: Product) -> dict:
-    level = db.scalar(select(StockLevel).where(StockLevel.variant_id == v.id))
     return {"id": str(v.id), "size": v.size, "color": v.color, "sku": v.sku, "price_paise": stock.variant_price(v, p),
-            "available": max((level.on_hand - level.reserved) if level else 0, 0)}
+            "available": stock.available_total(db, v.id)}
 
 
 @router.get("/categories")
@@ -113,7 +110,9 @@ def list_products(category: str | None = None, q: str | None = None, sort: str =
     page_size = max(1, min(page_size, 60))
     stmt = select(Product).where(Product.is_active.is_(True))
     if category:
-        stmt = stmt.where(func.lower(Product.category) == category.lower())
+        # One category, or several separated by commas (e.g. "Sarees,Blouse,Petticoat").
+        wanted = [c.strip().lower() for c in category.split(",") if c.strip()]
+        stmt = stmt.where(func.lower(Product.category).in_(wanted))
     if q:
         for word in q.split()[:6]:
             like = f"%{word}%"
@@ -263,7 +262,7 @@ def seo_product(product_id: UUID, db: Session = Depends(get_db)) -> HTMLResponse
     if p is None or not p.is_active:
         return HTMLResponse("<!doctype html><title>Not found</title>", status_code=404)
     card = _product_card(db, p)
-    desc = (p.description or f"{p.name} at WearVerse")[:300]
+    desc = (p.description or f"{p.name} at {settings.store_name}")[:300]
     price = card["price_from_paise"] / 100
     ld = {"@context": "https://schema.org", "@type": "Product", "name": p.name, "category": p.category, "description": desc,
           "image": [card["image_url"]] if card["image_url"] else [], "url": f"{_site()}/product/{p.id}",
@@ -272,7 +271,7 @@ def seo_product(product_id: UUID, db: Session = Depends(get_db)) -> HTMLResponse
     img = f'<img src="{_esc(card["image_url"])}" alt="{_esc(p.name)}">' if card["image_url"] else ""
     body = (f'<h1>{_esc(p.name)}</h1>{img}<p>{_esc(desc)}</p><p>Price from ₹{price:,.2f}</p>'
             f'<p>Category: <a href="{_site()}/{_slug(p.category)}">{_esc(p.category)}</a></p>')
-    return _page(f"{p.name} | WearVerse", desc, body, ld, card["image_url"])
+    return _page(f"{p.name} | {settings.store_name}", desc, body, ld, card["image_url"])
 
 
 @router.get("/seo/category/{category}", include_in_schema=False)
@@ -280,7 +279,7 @@ def seo_category(category: str, db: Session = Depends(get_db)) -> HTMLResponse:
     rows = db.scalars(select(Product).where(Product.is_active.is_(True), func.lower(Product.category).in_(
         [category.lower(), category.lower().rstrip("s")])).limit(200)).all()
     items = "".join(f'<li><a href="{_site()}/product/{p.id}">{_esc(p.name)}</a></li>' for p in rows)
-    return _page(f"{category.title()} | WearVerse", f"Shop {category} at WearVerse.", f"<h1>{_esc(category.title())}</h1><ul>{items}</ul>")
+    return _page(f"{category.title()} | {settings.store_name}", f"Shop {category} at {settings.store_name}.", f"<h1>{_esc(category.title())}</h1><ul>{items}</ul>")
 
 
 # ---------------------------------------------------------------------------

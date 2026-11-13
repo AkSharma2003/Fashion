@@ -23,6 +23,13 @@ What a customer can do on the website, so staff can help them on the phone.
    after 30 minutes unpaid, the items are released.
 4. On payment the customer gets an order number (`WV-000123`) and a WhatsApp confirmation.
 
+## My account
+
+After signing in, the header shows the customer's photo (or the first letter of their name). It opens a menu:
+**My profile** (photo, name, e-mail, mobile), **My orders**, **Saved addresses** (add, edit, remove, set a default —
+up to 10), **Log out**. At checkout a signed-in customer picks a saved address or adds a new one, which is saved for
+next time. To change e-mail or mobile number the customer contacts the shop.
+
 ## After the order
 
 - **Track order** (`/track`): order number + mobile number shows status and courier tracking.

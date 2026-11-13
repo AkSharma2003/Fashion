@@ -7,12 +7,16 @@ from sqlalchemy.orm import Session
 
 from app.core.alerts import SystemAlert
 from app.core.db import get_db
+from app.modules.shops.service import header_shop, shop_scope
 from app.core.errors import ok
 from app.core.outbox import OutboxEvent
 from app.modules.auth.dependencies import ACCOUNTANT, MANAGER, require_role
 from app.modules.auth.models import StaffUser
 from app.modules.fall_pico.models import FpJob
-from app.modules.inventory.models import StockLevel
+from app.modules.assist.models import MissingProductRequest
+from app.modules.catalog.models import Product
+from app.modules.inventory.models import ProductVariant, StockLevel
+from app.modules.store.models import ContactMessage
 from app.modules.khata.models import KhataAccount, LedgerEntry
 from app.modules.orders.models import Order
 from app.modules.pos.models import Bill, BillItem, BillPayment
@@ -41,9 +45,13 @@ def today_ist() -> date:
 
 
 @router.get("/dashboard")
-def dashboard(db: Session = Depends(get_db), user: StaffUser = Depends(require_role(MANAGER, ACCOUNTANT))):
+def dashboard(db: Session = Depends(get_db), user: StaffUser = Depends(require_role(MANAGER, ACCOUNTANT)),
+              x_shop_id: str | None = Depends(header_shop)):
+    """Today's numbers for one shop (picked in the header, or the user's own) or for all shops."""
+    scope = shop_scope(user, x_shop_id)
     start, end = _day_range(today_ist())
-    real = (Bill.is_shadow.is_(False), Bill.created_at >= start, Bill.created_at < end)
+    real = (Bill.is_shadow.is_(False), Bill.created_at >= start, Bill.created_at < end,
+            *((Bill.shop_id == scope,) if scope else ()))
     shop_sales = db.scalar(select(func.coalesce(func.sum(Bill.total_paise - Bill.returned_paise), 0)).where(*real)) or 0
     bills = db.scalar(select(func.count()).select_from(Bill).where(*real)) or 0
     by_mode = dict(db.execute(select(BillPayment.mode, func.coalesce(func.sum(BillPayment.amount_paise), 0))
@@ -61,14 +69,36 @@ def dashboard(db: Session = Depends(get_db), user: StaffUser = Depends(require_r
     fp_late = db.scalar(select(func.count()).select_from(FpJob).where(
         FpJob.status.in_(["PENDING", "ASSIGNED", "IN_PROGRESS", "REWORK", "COMPLETED"]),
         FpJob.promised_date < today_ist())) or 0
-    low_stock = db.scalar(select(func.count()).select_from(StockLevel).where(
-        (StockLevel.on_hand - StockLevel.reserved) <= 1)) or 0
+    # Only items still for sale (active variant of an active product): one shop's stock, or all shops added up.
+    available = func.sum(StockLevel.on_hand - StockLevel.reserved)
+    per_variant = (select(StockLevel.variant_id, available.label("available"))
+                   .join(ProductVariant, ProductVariant.id == StockLevel.variant_id)
+                   .join(Product, Product.id == ProductVariant.product_id)
+                   .where(ProductVariant.is_active.is_(True), Product.is_active.is_(True),
+                          *((StockLevel.shop_id == scope,) if scope else ()))
+                   .group_by(StockLevel.variant_id).having(available <= 1).subquery())
+    low_stock = db.scalar(select(func.count()).select_from(per_variant)) or 0
+    low_rows = db.execute(select(Product.name, ProductVariant.size, ProductVariant.color, ProductVariant.sku,
+                                 per_variant.c.available)
+                          .select_from(per_variant)
+                          .join(ProductVariant, ProductVariant.id == per_variant.c.variant_id)
+                          .join(Product, Product.id == ProductVariant.product_id)
+                          .order_by(per_variant.c.available, Product.name).limit(8)).all()
+    unpaid = db.scalar(select(func.count()).select_from(Order).where(Order.status == "PENDING_PAYMENT")) or 0
+    from app.modules.customers.models import Customer
+    users_total = db.scalar(select(func.count()).select_from(Customer)) or 0
+    users_new = db.scalar(select(func.count()).select_from(Customer).where(
+        Customer.created_at >= datetime.now(timezone.utc) - timedelta(days=7))) or 0
+    new_messages = db.scalar(select(func.count()).select_from(ContactMessage).where(ContactMessage.status == "NEW")) or 0
+    requests_open = db.scalar(select(func.count()).select_from(MissingProductRequest)
+                              .where(MissingProductRequest.status == "open")) or 0
     tally_backlog = db.scalar(select(func.count()).select_from(OutboxEvent).where(
         OutboxEvent.target == "tally", OutboxEvent.status == "pending")) or 0
     issues = db.scalar(select(func.count()).select_from(SyncIssue).where(SyncIssue.status == "open")) or 0
     alerts = db.scalars(select(SystemAlert).where(SystemAlert.is_resolved.is_(False))
                         .order_by(SystemAlert.created_at.desc()).limit(20)).all()
-    recent = db.scalars(select(Bill).where(Bill.is_shadow.is_(False)).order_by(Bill.created_at.desc()).limit(8)).all()
+    recent = db.scalars(select(Bill).where(Bill.is_shadow.is_(False), *((Bill.shop_id == scope,) if scope else ()))
+                        .order_by(Bill.created_at.desc()).limit(8)).all()
     return ok({
         "today": {"shop_sales_paise": int(shop_sales), "bills": int(bills), "online_sales_paise": int(online),
                   "online_orders": int(online_count), "collections_paise": int(collections),
@@ -76,6 +106,9 @@ def dashboard(db: Session = Depends(get_db), user: StaffUser = Depends(require_r
         "khata_outstanding_paise": int(outstanding), "orders_to_pack": int(to_pack),
         "fall_pico_open": int(fp_open), "fall_pico_late": int(fp_late), "low_stock_variants": int(low_stock),
         "tally_backlog": int(tally_backlog), "sync_issues": int(issues),
+        "unpaid_orders": int(unpaid), "users_total": int(users_total), "users_new_7d": int(users_new), "new_messages": int(new_messages), "customer_requests": int(requests_open),
+        "low_stock_items": [{"product": n, "size": sz, "color": c, "sku": sku, "available": int(a)}
+                            for n, sz, c, sku, a in low_rows],
         "alerts": [{"id": str(a.id), "kind": a.kind, "severity": a.severity, "message": a.message,
                     "created_at": a.created_at.isoformat() if a.created_at else None} for a in alerts],
         "recent_bills": [{"id": str(b.id), "bill_no": b.bill_no, "total_paise": b.total_paise, "source": b.source,
@@ -95,12 +128,14 @@ def resolve_alert(alert_id: str, db: Session = Depends(get_db), user: StaffUser 
 
 @router.get("/sales")
 def sales(date_from: date, date_to: date, db: Session = Depends(get_db),
-          user: StaffUser = Depends(require_role(ACCOUNTANT))):
+          user: StaffUser = Depends(require_role(ACCOUNTANT)),
+          x_shop_id: str | None = Depends(header_shop)):
     start, end = _range(date_from, date_to)
     day = ist_date(Bill.created_at)
     rows = db.execute(select(day, Bill.source, func.count(), func.coalesce(func.sum(Bill.total_paise), 0),
                              func.coalesce(func.sum(Bill.returned_paise), 0))
-                      .where(Bill.is_shadow.is_(False), Bill.created_at >= start, Bill.created_at < end)
+                      .where(Bill.is_shadow.is_(False), Bill.created_at >= start, Bill.created_at < end,
+                             *((Bill.shop_id == shop_scope(user, x_shop_id),) if shop_scope(user, x_shop_id) else ()))
                       .group_by(day, Bill.source).order_by(day)).all()
     online_day = ist_date(Order.paid_at)
     online = db.execute(select(online_day, func.count(), func.coalesce(func.sum(Order.total_paise), 0))
@@ -118,12 +153,14 @@ def sales(date_from: date, date_to: date, db: Session = Depends(get_db),
 
 @router.get("/gst")
 def gst(date_from: date, date_to: date, db: Session = Depends(get_db),
-        user: StaffUser = Depends(require_role(ACCOUNTANT))):
+        user: StaffUser = Depends(require_role(ACCOUNTANT)),
+          x_shop_id: str | None = Depends(header_shop)):
     start, end = _range(date_from, date_to)
     rows = db.execute(select(BillItem.gst_rate_bp, BillItem.hsn_code, func.sum(BillItem.taxable_paise),
                              func.sum(BillItem.tax_paise), func.sum(BillItem.line_total_paise))
                       .join(Bill, Bill.id == BillItem.bill_id)
-                      .where(Bill.is_shadow.is_(False), Bill.created_at >= start, Bill.created_at < end)
+                      .where(Bill.is_shadow.is_(False), Bill.created_at >= start, Bill.created_at < end,
+                             *((Bill.shop_id == shop_scope(user, x_shop_id),) if shop_scope(user, x_shop_id) else ()))
                       .group_by(BillItem.gst_rate_bp, BillItem.hsn_code)).all()
     out = []
     for rate, hsn, taxable, tax, total in rows:

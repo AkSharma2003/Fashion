@@ -39,14 +39,23 @@ def financial_year(now: datetime | None = None) -> str:
     return f"{year % 100:02d}"
 
 
-def get_counter(db: Session, code: str) -> Counter:
+def get_counter(db: Session, code: str, user: StaffUser | None = None) -> Counter:
+    """The billing counter. Each counter belongs to one shop; staff tied to a shop can only use its counters.
+    An unknown code is created for the user's shop (or the main shop), so a new device works at once."""
+    from app.modules.shops.service import check_access, main_shop_id
     counter = db.scalar(select(Counter).where(Counter.code == code))
     if counter is None:
-        counter = Counter(code=code, name=f"Counter {code}")
+        shop_id = getattr(user, "shop_id", None) or main_shop_id(db)
+        counter = Counter(code=code, name=f"Counter {code}", shop_id=shop_id)
         db.add(counter)
+        db.flush()
+    if counter.shop_id is None:
+        counter.shop_id = main_shop_id(db)
         db.flush()
     if not counter.is_active:
         raise BusinessError("FORBIDDEN", "This counter is switched off.", 403)
+    if user is not None:
+        check_access(user, counter.shop_id)
     return counter
 
 
@@ -106,9 +115,9 @@ def create_bill(db: Session, payload: dict, user: StaffUser, device: str | None 
         return saved
     mode = pos_mode(db)
     if mode == "off":
-        raise BusinessError("POS_OFF", "Billing in WearVerse POS is not switched on yet. Bill in Tally.", 422)
+        raise BusinessError("POS_OFF", "Billing in the POS is not switched on yet. Bill in Tally.", 422)
     shadow = mode == "parallel"
-    counter = get_counter(db, payload["counter_id"])
+    counter = get_counter(db, payload["counter_id"], user)
     slabs = get_setting(db, "gst_slabs")
     limit_fp = int(get_setting(db, "fall_pico_limit_paise"))
 
@@ -188,7 +197,7 @@ def create_bill(db: Session, payload: dict, user: StaffUser, device: str | None 
         raise BusinessError("DUPLICATE", f"Bill number {bill_no} is already used on this counter.", 409)
     register = open_register(db, counter.code)
     device_time = payload.get("created_at_device")
-    bill = Bill(bill_no=bill_no, counter_code=counter.code, idempotency_key=key, source="pos", is_shadow=shadow,
+    bill = Bill(bill_no=bill_no, counter_code=counter.code, shop_id=counter.shop_id, idempotency_key=key, source="pos", is_shadow=shadow,
                 customer_id=customer.id if customer else None, khata_account_id=account.id if account else None,
                 gross_paise=gross, discount_paise=discount_total, total_paise=total, register_id=register.id if register else None,
                 sold_by=str(payload.get("sold_by") or user.id), created_by=str(user.id),
@@ -218,7 +227,7 @@ def create_bill(db: Session, payload: dict, user: StaffUser, device: str | None 
             continue
         # A finished shop sale is never rejected for stock; going negative raises a Stock Conflict alert.
         stock.move(db, variant.id, -qty, "shop_sale", source="pos", reference_type="bill",
-                   reference_id=str(bill.id), actor_id=str(user.id), allow_negative=True)
+                   reference_id=str(bill.id), actor_id=str(user.id), allow_negative=True, shop_id=counter.shop_id)
         unit_net = line_total // qty
         if not declined and fp.is_eligible(product, unit_net, limit_fp):
             for _ in range(qty):
@@ -286,6 +295,8 @@ def create_return(db: Session, bill_id: UUID, payload: dict, user: StaffUser) ->
     bill = db.scalar(select(Bill).where(Bill.id == bill_id).with_for_update())
     if bill is None:
         raise not_found("Bill")
+    from app.modules.shops.service import check_access
+    check_access(user, bill.shop_id)        # a Sethi Kids cashier cannot return a Sethi Suit bill
     approver = user if role_name(user) in {"Manager", "Owner", "Admin"} else find_approver_by_pin(db, payload.get("approval_pin"))
     days = int(get_setting(db, "return_days") or 7)
     created = bill.created_at if bill.created_at.tzinfo else bill.created_at.replace(tzinfo=timezone.utc)
@@ -308,7 +319,7 @@ def create_return(db: Session, bill_id: UUID, payload: dict, user: StaffUser) ->
         lines.append({"bill_item_id": str(item.id), "qty": qty, "amount_paise": value, "sku": item.sku})
         if not bill.is_shadow and item.variant_id:
             stock.move(db, item.variant_id, qty, "shop_return", source="pos", reference_type="bill_return",
-                       reference_id=str(bill.id), actor_id=str(user.id))
+                       reference_id=str(bill.id), actor_id=str(user.id), shop_id=bill.shop_id)
             fp.cancel_jobs_for_item(db, item.id, qty, str(user.id))
     ret = BillReturn(bill_id=bill.id, return_no=formatted(db, f"return:{bill.counter_code}", f"{bill.counter_code}-R-", 5),
                      idempotency_key=key, items=lines, amount_paise=amount, refund_mode=refund_mode,
@@ -362,7 +373,11 @@ def bill_out(db: Session, bill: Bill) -> dict:
     items = db.scalars(select(BillItem).where(BillItem.bill_id == bill.id)).all()
     pays = db.scalars(select(BillPayment).where(BillPayment.bill_id == bill.id)).all()
     customer = db.get(Customer, bill.customer_id) if bill.customer_id else None
+    from app.modules.shops.models import Shop
+    shop = db.get(Shop, bill.shop_id) if bill.shop_id else None
     return {"id": str(bill.id), "bill_no": bill.bill_no, "counter": bill.counter_code, "source": bill.source,
+            "shop": {"id": str(shop.id), "code": shop.code, "name": shop.name, "gstin": shop.gstin,
+                     "address": shop.address, "phone": shop.phone} if shop else None,
             "shadow": bill.is_shadow, "status": bill.status,
             "customer": {"id": str(customer.id), "name": customer.full_name, "phone": customer.phone_number} if customer else None,
             "gross_paise": bill.gross_paise, "discount_paise": bill.discount_paise, "total_paise": bill.total_paise,

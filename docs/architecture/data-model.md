@@ -17,6 +17,12 @@ Run `alembic upgrade head`. `alembic check` must report no drift after a model c
 
 ## Tables by area
 
+### Shops
+
+| Table | Purpose |
+|---|---|
+| `shops` | Sethi Saree Sansar (main), Sethi Suit, Sethi Kids: code (bill prefix), GSTIN, state, address, Tally company. Stock, counters, bills, purchases and staff refer to a shop (ADR 0007) |
+
 ### Catalog and stock
 
 | Table | Purpose |
@@ -25,7 +31,7 @@ Run `alembic upgrade head`. `alembic check` must report no drift after a model c
 | `variants` | Size / colour / price / cost per product; SKU unique |
 | `barcodes` | Extra scan codes for a variant |
 | `product_images` | Image object keys in R2 |
-| `stock_levels` | One row per variant: `on_hand`, `reserved` (available = on_hand − reserved) |
+| `stock_levels` | One row per variant **per shop**: `on_hand`, `reserved` (available = on_hand − reserved) |
 | `stock_movements` | **Append-only.** Every change: `quantity_delta`, `movement_type` (shop sale, online sale, returns, purchase, adjustment, count, Tally import), source, reference |
 | `stock_counts` | Physical count results |
 
@@ -67,6 +73,8 @@ concurrent sales.
 | `returns`, `refunds` | Website returns and gateway refunds |
 | `customers`, `whatsapp_optins` | Customers and their WhatsApp consent |
 | `contact_messages` | Messages from the website's Contact page (`NEW` / `DONE`) |
+| `customer_addresses` | Customer address book: name, phone, address, pincode, type (Home/Work/Other), one default per customer |
+| `customer_wishlist`, `customer_cart` | A signed-in customer's saved wishlist and bag; merged with guest picks at sign-in, removed from the browser at sign-out |
 
 ### Tally
 

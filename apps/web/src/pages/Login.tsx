@@ -1,10 +1,13 @@
+import { STORE_NAME } from "../lib/brand";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { apiData, ApiError, errorMessage, post } from "../lib/api/client";
-import { clearSession, saveSession, setCustomerToken } from "../lib/auth/session";
+import { clearSession, getCustomerToken, saveSession, setCustomerToken, staffHome } from "../lib/auth/session";
+import { clearLocalShopping, mergeOnSignIn } from "../lib/shoppingSync";
+import { logoutCustomer, publishProfile } from "../lib/customer";
 
 /** One sign-in for everybody. The server says whether the account is shop staff or a website customer;
  *  staff go to the screen for their role, customers to their account. */
@@ -14,11 +17,6 @@ type StaffResult = { kind: "staff"; access_token: string; refresh_token: string;
 type CustomerResult = { kind: "customer"; access_token: string };
 type NeedsPhone = { kind: "needs_phone"; email: string; full_name: string };
 
-const HOME_BY_ROLE: Record<string, string> = {
-  Owner: "/backoffice", Admin: "/backoffice", Manager: "/backoffice", Accountant: "/backoffice",
-  Cashier: "/pos", OnlineStaff: "/backoffice/online-orders", Supervisor: "/backoffice/fall-pico",
-  Employee: "/backoffice/me",
-};
 
 type GoogleId = {
   accounts: { id: {
@@ -43,7 +41,6 @@ function loadGoogleScript(): Promise<void> {
 const inputClass = "min-h-12 w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20";
 
 export default function Login() {
-  const navigate = useNavigate();
   const location = useLocation();
   const [params] = useSearchParams();
 
@@ -64,19 +61,25 @@ export default function Login() {
 
   function finishStaff(r: StaffResult) {
     if (!r.is_active) throw new Error("This account is inactive. Contact the shop owner.");
-    const home = HOME_BY_ROLE[r.role ?? ""] ?? "/backoffice";
-    const destination = next.startsWith("/backoffice") || next === "/pos" ? next : home;
-    setCustomerToken(null);
+    const home = staffHome(r.role);
+    // Only roles with back office may be sent back to a back-office page they came from.
+    const destination = (next.startsWith("/backoffice") || next === "/pos") && home !== "/me" ? next : home;
+    logoutCustomer();
     // The POS keeps its login across restarts so the counter can bill offline.
     saveSession(r, remember || destination === "/pos");
-    navigate(destination, { replace: true });
+    window.location.replace(destination);      // fresh page: nothing from the previous user stays in memory
   }
 
-  function finishCustomer(r: CustomerResult) {
+  async function finishCustomer(r: CustomerResult) {
+    // Someone else was signed in on this browser: their bag must not join this account. A guest's picks do join.
+    if (getCustomerToken()) clearLocalShopping();
     clearSession();
+    publishProfile(null);           // forget any earlier customer's cached name/photo
     setCustomerToken(r.access_token);
-    const destination = next && !next.startsWith("/backoffice") && next !== "/pos" ? next : "/account";
-    navigate(destination, { replace: true });
+    await mergeOnSignIn();          // guest bag + wishlist join the account's saved ones
+    // Customers land on the home page (or the page they were on, e.g. checkout).
+    const destination = next && !next.startsWith("/backoffice") && next !== "/pos" ? next : "/";
+    window.location.replace(destination);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -86,7 +89,7 @@ export default function Login() {
     try {
       const r = await post<StaffResult | CustomerResult>("/auth/sign-in", { login: login.trim(), password });
       if (r.kind === "staff") finishStaff(r);
-      else finishCustomer(r);
+      else await finishCustomer(r);
     } catch (caught) {
       setError(caught instanceof ApiError && caught.status === 401
         ? "Phone/e-mail or password is incorrect."
@@ -105,7 +108,7 @@ export default function Login() {
         setGoogleCredential(credential);
         setNeedsPhone(r);
       } else {
-        finishCustomer(r);
+        await finishCustomer(r);
       }
     } catch (caught) {
       setError(errorMessage(caught, "Google sign-in failed. Please try again."));
@@ -144,7 +147,7 @@ export default function Login() {
         <section className="w-full max-w-md rounded-xl border border-gray-100 bg-white p-5 shadow-xl sm:rounded-2xl sm:p-9">
           <div className="mb-6 text-center sm:mb-8">
             <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-primary">Welcome back</p>
-            <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Sign in to WearVerse</h1>
+            <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Sign in to {STORE_NAME}</h1>
             <p className="mt-2 text-sm text-gray-600">Enter your details to access your account.</p>
           </div>
 
@@ -229,7 +232,7 @@ export default function Login() {
               )}
 
               <p className="mt-6 text-center text-sm text-gray-600">
-                New to WearVerse?{" "}
+                New to {STORE_NAME}?{" "}
                 <Link to="/signin" className="font-semibold text-primary hover:underline">Create an account</Link>
               </p>
             </>

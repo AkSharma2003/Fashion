@@ -1,3 +1,4 @@
+import { STORE_NAME } from "../lib/brand";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Card from "../components/Card";
@@ -21,7 +22,7 @@ export default function SearchResults() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  useSeo({ title: query ? `${query} | WearVerse` : "Search | WearVerse", description: "Search sarees, suits and kidswear at WearVerse." });
+  useSeo({ title: query ? `${query} | ${STORE_NAME}` : `Search | ${STORE_NAME}`, description: `Search sarees, suits and kidswear at ${STORE_NAME}.` });
 
   useEffect(() => {
     if (!query) return;
@@ -59,10 +60,8 @@ export default function SearchResults() {
       <Header />
       <main className="min-h-screen bg-linear-to-br from-background to-Alt_background px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <section className="mx-auto max-w-7xl">
-          <div className="mb-8 text-center sm:mb-10">
-            <h1 className="font-primaryFont text-3xl font-semibold text-main_text sm:text-4xl">
-              {query ? `“${query}”` : t("Search")}
-            </h1>
+          <div className="mb-4 text-center">
+            <h1 className="sr-only">{query ? `Results for ${query}` : t("Search")}</h1>
             {chips.length > 0 && (
               <div className="mt-3 flex flex-wrap justify-center gap-2">
                 {chips.map((c) => <span key={c} className="rounded-full bg-white px-3 py-1 text-xs text-primary ring-1 ring-divider">{c}</span>)}
@@ -76,7 +75,7 @@ export default function SearchResults() {
           </div>
           {error && <p className="mb-4 text-center text-sm text-sale">{error}</p>}
           {items.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:gap-6 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-4 md:grid-cols-4 xl:grid-cols-5">
               {items.map((c) => <Card key={c.id} product={toCardProduct(c)} />)}
             </div>
           ) : !loading && (

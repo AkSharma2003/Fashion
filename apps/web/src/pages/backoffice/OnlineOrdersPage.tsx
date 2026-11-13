@@ -3,6 +3,7 @@ import BarcodeScanner from "../../components/backoffice/BarcodeScanner";
 import { Alert, Badge, Button, Card, Field, Input, Loading, Modal, Money, Page, Select, Table } from "../../components/ui";
 import { apiData, patch, post } from "../../lib/api/client";
 import { useAction, useApi } from "../../lib/hooks/useApi";
+import { hasRole, useStaff } from "../../lib/auth/staff";
 import { formatDate } from "../../lib/money";
 
 type OrderItem = { id: string; product_name: string; sku: string; size: string | null; color: string | null; qty: number;
@@ -57,6 +58,8 @@ function OrderModal({ order: initial, onClose }: { order: Order; onClose: () => 
   const [awb, setAwb] = useState("");
   const [courier, setCourier] = useState("Shiprocket");
   const [returnQty, setReturnQty] = useState<Record<string, string>>({});
+  const { me } = useStaff();
+  const canReturn = hasRole(me, "Manager");   // refunds money, so managers (and Owner/Admin) only
   const allPicked = order.items.every((i) => (picked[i.sku] ?? 0) >= i.qty);
 
   async function setStatus(status: string, note?: string) {
@@ -121,8 +124,11 @@ function OrderModal({ order: initial, onClose }: { order: Order; onClose: () => 
         )}
         {order.shipment && <p className="text-sm">Shipped with {order.shipment.courier}, AWB {order.shipment.awb}</p>}
 
-        {["SHIPPED", "DELIVERED"].includes(order.status) && (
-          <Card title="Return items (manager)">
+        {["SHIPPED", "DELIVERED"].includes(order.status) && !canReturn && (
+          <p className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-600">Returns and refunds are done by a manager.</p>
+        )}
+        {["SHIPPED", "DELIVERED"].includes(order.status) && canReturn && (
+          <Card title="Return items">
             {order.items.map((i) => (
               <div key={i.id} className="mb-2 flex items-center gap-3 text-sm">
                 <span className="flex-1">{i.product_name} (bought {i.qty}, returned {i.returned_qty})</span>

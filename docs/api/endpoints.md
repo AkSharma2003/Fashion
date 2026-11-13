@@ -1,6 +1,6 @@
 # Endpoint list
 
-Generated from the API by `python -m scripts.gen_api_docs` (in `apps/api`). Do not edit by hand. 178 operations.
+Generated from the API by `python -m scripts.gen_api_docs` (in `apps/api`). Do not edit by hand. 201 operations.
 Request and response fields: `http://localhost:8000/docs`. Conventions: [README.md](README.md).
 
 ## ai
@@ -36,6 +36,10 @@ Request and response fields: `http://localhost:8000/docs`. Conventions: [README.
 | POST | `/api/v1/auth/otp/send` | Send Otp |
 | POST | `/api/v1/auth/otp/verify` | Verify Otp |
 | POST | `/api/v1/auth/refresh` | Refresh Token |
+| GET | `/api/v1/auth/registered-users` | Registered Users |
+| POST | `/api/v1/auth/registered-users/{customer_id}/role` | Give Role |
+| POST | `/api/v1/auth/registered-users/{customer_id}/role/remove` | Remove Role |
+| GET | `/api/v1/auth/role-history` | Role History |
 | GET | `/api/v1/auth/roles` | List Roles |
 | POST | `/api/v1/auth/sign-in` | Sign In |
 | GET | `/api/v1/auth/users` | List Staff Users |
@@ -55,10 +59,12 @@ Request and response fields: `http://localhost:8000/docs`. Conventions: [README.
 | POST | `/api/v1/catalog/{product_id}/images` | Upload Product Image Endpoint |
 | PUT | `/api/v1/catalog/{product_id}/images/{image_id}` | Replace Product Image |
 | DELETE | `/api/v1/catalog/{product_id}/images/{image_id}` | Remove Product Image |
+| DELETE | `/api/v1/catalog/{product_id}/permanent` | Delete Product Permanently |
 | GET | `/api/v1/catalog/{product_id}/variants` | List Variants |
 | POST | `/api/v1/catalog/{product_id}/variants` | Create Catalog Variant |
 | PATCH | `/api/v1/catalog/{product_id}/variants/{variant_id}` | Update Catalog Variant |
 | DELETE | `/api/v1/catalog/{product_id}/variants/{variant_id}` | Deactivate Catalog Variant |
+| DELETE | `/api/v1/catalog/{product_id}/variants/{variant_id}/permanent` | Delete Variant Permanently |
 
 ## customers
 
@@ -143,6 +149,8 @@ Request and response fields: `http://localhost:8000/docs`. Conventions: [README.
 | POST | `/api/v1/khata/accounts/{account_id}/paylink` | Make Paylink |
 | POST | `/api/v1/khata/accounts/{account_id}/payments` | Receive Payment |
 | GET | `/api/v1/khata/customer/{customer_id}/account` | Get Customer Khata |
+| POST | `/api/v1/khata/customers/{customer_id}/make-khata` | Make Khata Customer |
+| POST | `/api/v1/khata/customers/{customer_id}/make-normal` | Make Normal Customer |
 | GET | `/api/v1/khata/integrity` | Integrity |
 | GET | `/api/v1/khata/lookup` | Lookup By Phone |
 | GET | `/api/v1/khata/reports/ageing` | Ageing Report |
@@ -206,6 +214,7 @@ Request and response fields: `http://localhost:8000/docs`. Conventions: [README.
 | GET | `/api/v1/pos/bills/by-number/{bill_no}` | Bill By Number |
 | GET | `/api/v1/pos/bills/{bill_id}` | Get Bill |
 | POST | `/api/v1/pos/bills/{bill_id}/return` | Return Bill |
+| GET | `/api/v1/pos/counters` | List Counters |
 | GET | `/api/v1/pos/lookup` | Lookup Code |
 | POST | `/api/v1/pos/registers/close` | Close Register |
 | GET | `/api/v1/pos/registers/current` | Current Register |
@@ -243,6 +252,13 @@ Request and response fields: `http://localhost:8000/docs`. Conventions: [README.
 | GET | `/api/v1/settings` | Get Settings |
 | PATCH | `/api/v1/settings` | Update Settings |
 
+## shops
+
+| Method | Path | What it does |
+|---|---|---|
+| GET | `/api/v1/shops` | List Shops |
+| PATCH | `/api/v1/shops/{shop_id}` | Update Shop |
+
 ## store
 
 | Method | Path | What it does |
@@ -253,6 +269,18 @@ Request and response fields: `http://localhost:8000/docs`. Conventions: [README.
 | POST | `/api/v1/store/contact` | Contact |
 | GET | `/api/v1/store/contact-messages` | Contact Messages |
 | PATCH | `/api/v1/store/contact-messages/{message_id}` | Contact Message Status |
+| GET | `/api/v1/store/me` | My Profile |
+| PATCH | `/api/v1/store/me` | Update Profile |
+| GET | `/api/v1/store/me/addresses` | List Addresses |
+| POST | `/api/v1/store/me/addresses` | Add Address |
+| PATCH | `/api/v1/store/me/addresses/{address_id}` | Edit Address |
+| DELETE | `/api/v1/store/me/addresses/{address_id}` | Delete Address |
+| POST | `/api/v1/store/me/addresses/{address_id}/default` | Set Default Address |
+| POST | `/api/v1/store/me/photo` | Upload Photo |
+| DELETE | `/api/v1/store/me/photo` | Remove Photo |
+| GET | `/api/v1/store/me/shopping` | My Shopping |
+| PUT | `/api/v1/store/me/shopping` | Save Shopping |
+| POST | `/api/v1/store/me/shopping/merge` | Merge Shopping |
 | GET | `/api/v1/store/my/orders` | My Orders |
 | GET | `/api/v1/store/orders/{order_no}` | Track Order |
 | POST | `/api/v1/store/orders/{order_no}/pay` | Retry Payment |

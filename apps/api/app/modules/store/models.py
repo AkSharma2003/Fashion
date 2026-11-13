@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, Uuid, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -36,4 +36,27 @@ class CustomerAddress(Base):
     pincode: Mapped[str] = mapped_column(String(6))
     kind: Mapped[str] = mapped_column(String(8), default="HOME")   # HOME | WORK | OTHER
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class CustomerWishlistItem(Base):
+    """A product a signed-in customer saved; follows them to any device."""
+    __tablename__ = "customer_wishlist"
+    __table_args__ = (UniqueConstraint("customer_id", "product_id", name="uq_customer_wishlist_product"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    customer_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("customers.id"), index=True)
+    product_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("products.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class CustomerCartItem(Base):
+    """A size/colour in a signed-in customer's bag (stock is only held at checkout)."""
+    __tablename__ = "customer_cart"
+    __table_args__ = (UniqueConstraint("customer_id", "variant_id", name="uq_customer_cart_variant"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    customer_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("customers.id"), index=True)
+    variant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("variants.id"))
+    qty: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

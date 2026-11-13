@@ -1,5 +1,6 @@
 """Import every models module so SQLAlchemy metadata (Alembic, tests) sees all tables."""
 from app.core import alerts, app_settings, audit, idempotency, outbox, sequences  # noqa: F401
+from app.modules.shops import models as shop_models  # noqa: F401
 from app.modules.auth import models as auth_models  # noqa: F401
 from app.modules.catalog import models as catalog_models  # noqa: F401
 from app.modules.customers import models as customer_models  # noqa: F401

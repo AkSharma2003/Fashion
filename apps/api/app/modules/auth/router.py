@@ -61,7 +61,8 @@ def get_current_user_info(current_user:StaffUser=Depends(get_current_user)):
         "phone_number": current_user.phone_number,
         "role_id": str(current_user.role_id),
         "role": current_user.role.name if current_user.role else None,
-        "is_active": current_user.is_active
+        "is_active": current_user.is_active,
+        "shop_id": str(current_user.shop_id) if current_user.shop_id else None,   # None = all shops
     }
     
 @router.post("/refresh",response_model=RefreshTokenResponse)
@@ -219,11 +220,14 @@ from app.modules.auth.dependencies import ALL_ROLES
 
 class StaffUserCreate(_BaseModel):
     full_name: str = _Field(min_length=2, max_length=50)
-    phone_number: str = _Field(min_length=10, max_length=15)
+    phone_number: str = _Field(pattern=r"^\d{10}$")
     email: str | None = _Field(default=None, max_length=255)
     role: str
     password: str | None = _Field(default=None, min_length=6, max_length=64)
     pin: str | None = _Field(default=None, pattern=r"^\d{4,6}$")
+    shop_id: UUID | None = None          # None = works in all shops
+    confirm_password: str = _Field(min_length=1, max_length=128)    # the person making the change
+    reason: str | None = _Field(default=None, max_length=300)
 
 
 class StaffUserUpdate(_BaseModel):
@@ -233,6 +237,11 @@ class StaffUserUpdate(_BaseModel):
     password: str | None = _Field(default=None, min_length=6, max_length=64)
     pin: str | None = _Field(default=None, pattern=r"^\d{4,6}$")
     is_active: bool | None = None
+    shop_id: UUID | None = None
+    all_shops: bool | None = None        # true = clear the shop (works in all shops)
+    # Needed when the role, shop or on/off changes: the changer's own password and why.
+    confirm_password: str | None = _Field(default=None, max_length=128)
+    reason: str | None = _Field(default=None, max_length=300)
 
 
 def _ensure_role(db: Session, name: str):
@@ -245,9 +254,56 @@ def _ensure_role(db: Session, name: str):
     return role
 
 
+def _active_owners(db: Session) -> int:
+    from app.modules.auth.models import Role
+    return db.query(StaffUser).join(Role, Role.id == StaffUser.role_id).filter(
+        Role.name == "Owner", StaffUser.is_active.is_(True)).count()
+
+
+def _guard_staff_change(db: Session, actor: StaffUser, target: StaffUser | None, *, new_role: str | None,
+                        deactivate: bool) -> None:
+    """Rules that keep the shop from locking itself out of Settings."""
+    actor_role = actor.role.name if actor.role else None
+    target_role = target.role.name if target and target.role else None
+    if (new_role == "Owner" or target_role == "Owner") and actor_role != "Owner":
+        raise BusinessError("FORBIDDEN", "Only an Owner can give the Owner role or change an Owner's login.", 403)
+    if target is not None and target.id == actor.id:
+        if new_role is not None and new_role != actor_role:
+            raise BusinessError("FORBIDDEN", "You cannot change your own role. Ask another Owner.", 403)
+        if deactivate:
+            raise BusinessError("FORBIDDEN", "You cannot switch off your own login.", 403)
+    if target_role == "Owner" and target.is_active and ((new_role and new_role != "Owner") or deactivate) \
+            and _active_owners(db) <= 1:
+        raise BusinessError("FORBIDDEN", "This is the only Owner. Make someone else Owner first.", 403)
+
+
 def _user_out(u: StaffUser) -> dict:
     return {"id": str(u.id), "full_name": u.full_name, "phone_number": u.phone_number, "email": u.email,
-            "role": u.role.name if u.role else None, "is_active": u.is_active, "has_pin": bool(u.pin_hash)}
+            "role": u.role.name if u.role else None, "is_active": u.is_active, "has_pin": bool(u.pin_hash),
+            "shop_id": str(u.shop_id) if u.shop_id else None}
+
+
+from app.core.ratelimit import rate_limit as _rate_limit  # noqa: E402
+from app.core.security import verify_password as _verify_password  # noqa: E402
+_change_limit = [Depends(_rate_limit("role-change", 20, 60))]     # slows down password guessing
+
+
+def _confirm_change(actor: StaffUser, confirm_password: str | None, reason: str | None, *, need_reason: bool = True) -> str:
+    """Role and access changes need the changer's own password and a reason (kept in the record)."""
+    if not confirm_password or not actor.password_hash or not _verify_password(confirm_password, actor.password_hash):
+        raise BusinessError("CONFIRM_FAILED", "Your password is not correct. Nothing was changed.", 403)
+    reason = (reason or "").strip()
+    if need_reason and len(reason) < 5:
+        raise BusinessError("VALIDATION_ERROR", "Write why the role is being changed (at least 5 characters).", 422)
+    return reason
+
+
+def _record_role_change(db: Session, actor: StaffUser, target: StaffUser, *, old: dict | None, reason: str,
+                        what: str, device: str | None = None) -> None:
+    """One append-only record per role or access change: who, whom, from what to what, why, when."""
+    write_audit(db, actor_id=str(actor.id), action="role_change", entity="staff_user", entity_id=str(target.id),
+                old_value=old, new_value={**_user_out(target), "change": what, "reason": reason,
+                                          "changed_by": actor.full_name}, device=device)
 
 
 @router.get("/roles")
@@ -261,9 +317,11 @@ def list_staff_users(db: Session = Depends(get_db), current_user: StaffUser = De
     return ok([_user_out(u) for u in users])
 
 
-@router.post("/users", status_code=status.HTTP_201_CREATED)
+@router.post("/users", status_code=status.HTTP_201_CREATED, dependencies=_change_limit)
 def create_staff_user(payload: StaffUserCreate, db: Session = Depends(get_db),
                       current_user: StaffUser = Depends(require_role())):
+    reason = _confirm_change(current_user, payload.confirm_password, payload.reason, need_reason=False) or "New staff login"
+    _guard_staff_change(db, current_user, None, new_role=payload.role, deactivate=False)
     role = _ensure_role(db, payload.role)
     try:
         user = AuthService(db).create_staff_user(
@@ -274,19 +332,29 @@ def create_staff_user(payload: StaffUserCreate, db: Session = Depends(get_db),
         )
     except ValueError as exc:
         raise BusinessError("DUPLICATE", str(exc), 409) from exc
-    write_audit(db, actor_id=str(current_user.id), action="create", entity="staff_user",
-                entity_id=str(user.id), new_value={"role": payload.role, "phone": payload.phone_number})
+    if payload.shop_id is not None:
+        from app.modules.shops.service import get_shop
+        user.shop_id = get_shop(db, payload.shop_id).id
+        db.flush()
+    _record_role_change(db, current_user, user, old=None, reason=reason, what=f"new login as {payload.role}")
     db.commit()
     db.refresh(user)
     return ok(_user_out(user))
 
 
-@router.patch("/users/{user_id}")
+@router.patch("/users/{user_id}", dependencies=_change_limit)
 def update_staff_user(user_id: UUID, payload: StaffUserUpdate, db: Session = Depends(get_db),
                       current_user: StaffUser = Depends(require_role())):
     user = db.get(StaffUser, user_id)
     if user is None:
         raise BusinessError("NOT_FOUND", "Staff user not found.", 404)
+    current_role = user.role.name if user.role else None
+    access_change = ((payload.role is not None and payload.role != current_role) or payload.is_active is not None
+                     or payload.shop_id is not None or bool(payload.all_shops))
+    reason = _confirm_change(current_user, payload.confirm_password, payload.reason) if access_change else ""
+    _guard_staff_change(db, current_user, user, new_role=payload.role, deactivate=payload.is_active is False)
+    if user.id == current_user.id and (payload.shop_id is not None or payload.all_shops):
+        raise BusinessError("FORBIDDEN", "You cannot change your own shop. Ask the owner.", 403)
     old = _user_out(user)
     if payload.full_name is not None:
         user.full_name = payload.full_name
@@ -300,10 +368,23 @@ def update_staff_user(user_id: UUID, payload: StaffUserUpdate, db: Session = Dep
         user.pin_hash = hash_password(payload.pin)
     if payload.is_active is not None:
         user.is_active = payload.is_active
+    if payload.all_shops:
+        user.shop_id = None
+    elif payload.shop_id is not None:
+        from app.modules.shops.service import get_shop
+        user.shop_id = get_shop(db, payload.shop_id).id
     db.flush()
     db.refresh(user)
-    write_audit(db, actor_id=str(current_user.id), action="update", entity="staff_user",
-                entity_id=str(user.id), old_value=old, new_value=_user_out(user))
+    if access_change:
+        new = _user_out(user)
+        what = ", ".join(x for x in (
+            f"role {old['role']} → {new['role']}" if old["role"] != new["role"] else "",
+            ("switched on" if new["is_active"] else "switched off") if old["is_active"] != new["is_active"] else "",
+            "shop changed" if old["shop_id"] != new["shop_id"] else "") if x) or "no change"
+        _record_role_change(db, current_user, user, old=old, reason=reason, what=what)
+    else:
+        write_audit(db, actor_id=str(current_user.id), action="update", entity="staff_user",
+                    entity_id=str(user.id), old_value=old, new_value=_user_out(user))
     db.commit()
     return ok(_user_out(user))
 
@@ -400,3 +481,168 @@ def google_sign_in(payload: GoogleIn, db: Session = Depends(get_db)):
     if not customer.is_active:
         raise BusinessError("FORBIDDEN", "This account is inactive. Contact the shop.", 403)
     return ok(_customer_payload(customer))
+
+
+# ---------------------------------------------------------------------------
+# Registered users (website customers): Owner, Admin and Manager can see them and give a staff role.
+# The staff login uses the same phone and password the person registered with.
+# ---------------------------------------------------------------------------
+from app.modules.auth.dependencies import ADMIN, MANAGER, OWNER  # noqa: E402
+
+# Which roles each person may hand out. Managers only give counter / floor roles.
+GRANTABLE = {
+    OWNER: ["Owner", "Admin", "Manager", "Accountant", "Cashier", "OnlineStaff", "Supervisor", "Employee"],
+    ADMIN: ["Admin", "Manager", "Accountant", "Cashier", "OnlineStaff", "Supervisor", "Employee"],
+    MANAGER: ["Cashier", "OnlineStaff", "Supervisor", "Employee"],
+}
+people_admin = require_role(MANAGER)          # Owner and Admin pass every role check
+
+
+def _active_khata(db: Session, customer_id):
+    from app.modules.khata.models import KhataAccount
+    return db.scalar(select(KhataAccount).where(KhataAccount.customer_id == customer_id, KhataAccount.is_active.is_(True)))
+
+
+def _grantable(actor: StaffUser) -> list[str]:
+    return GRANTABLE.get(actor.role.name if actor.role else "", [])
+
+
+def _staff_for(db: Session, phone: str) -> StaffUser | None:
+    return db.query(StaffUser).filter(StaffUser.phone_number == phone).first()
+
+
+def _person_out(c: Customer, staff: StaffUser | None, khata=None) -> dict:
+    return {"id": str(c.id), "full_name": c.full_name, "phone_number": c.phone_number, "email": c.email,
+            # Every customer is "normal" until a khata (credit) account is opened for them.
+            "type": "khata" if khata is not None else "normal",
+            "khata": ({"account_id": str(khata.id), "balance_paise": khata.balance_paise,
+                       "credit_limit_paise": khata.credit_limit_paise, "credit_days": khata.credit_days}
+                      if khata is not None else None),
+            "is_verified": c.is_verified, "is_active": c.is_active, "has_password": bool(c.password_hash),
+            "joined": c.created_at.isoformat() if c.created_at else None,
+            "staff": ({"user_id": str(staff.id), "role": staff.role.name if staff.role else None,
+                       "shop_id": str(staff.shop_id) if staff.shop_id else None, "is_active": staff.is_active}
+                      if staff else None)}
+
+
+@router.get("/registered-users")
+def registered_users(q: str | None = None, type: str | None = None, db: Session = Depends(get_db),
+                     user: StaffUser = Depends(people_admin)):
+    """All customers (newest first) with their type (khata / normal) and staff role if any.
+    `type=khata` or `type=normal` filters."""
+    from app.modules.khata.models import KhataAccount
+    active_khata = select(KhataAccount.customer_id).where(KhataAccount.is_active.is_(True))
+    stmt = select(Customer).order_by(Customer.created_at.desc()).limit(300)
+    if type == "khata":
+        stmt = stmt.where(Customer.id.in_(active_khata))
+    elif type == "normal":
+        stmt = stmt.where(Customer.id.not_in(active_khata))
+    if q and q.strip():
+        like = f"%{q.strip()}%"
+        stmt = stmt.where(or_(Customer.full_name.ilike(like), Customer.phone_number.ilike(like), Customer.email.ilike(like)))
+    customers = db.scalars(stmt).all()
+    staff = {s.phone_number: s for s in db.query(StaffUser).filter(
+        StaffUser.phone_number.in_([c.phone_number for c in customers])).all()} if customers else {}
+    khatas = {k.customer_id: k for k in db.scalars(select(KhataAccount).where(
+        KhataAccount.is_active.is_(True), KhataAccount.customer_id.in_([c.id for c in customers])))} if customers else {}
+    return ok({"can_give": _grantable(user),
+               "users": [_person_out(c, staff.get(c.phone_number), khatas.get(c.id)) for c in customers]})
+
+
+class GiveRoleIn(BaseModel):
+    role: str
+    shop_id: UUID | None = None                      # None = all shops
+    password: str | None = Field(default=None, min_length=6, max_length=64)   # their login password, only if they never set one
+    confirm_password: str = Field(min_length=1, max_length=128)               # the changer's own password
+    reason: str = Field(max_length=300)
+
+
+class RemoveRoleIn(BaseModel):
+    confirm_password: str = Field(min_length=1, max_length=128)
+    reason: str = Field(max_length=300)
+
+
+@router.post("/registered-users/{customer_id}/role", dependencies=_change_limit)
+def give_role(customer_id: UUID, payload: GiveRoleIn, db: Session = Depends(get_db),
+              user: StaffUser = Depends(people_admin)):
+    reason = _confirm_change(user, payload.confirm_password, payload.reason)
+    customer = db.get(Customer, customer_id)
+    if customer is None:
+        raise BusinessError("NOT_FOUND", "User not found.", 404)
+    if payload.role not in _grantable(user):
+        raise BusinessError("FORBIDDEN", f"You cannot give the {payload.role} role.", 403)
+    staff = _staff_for(db, customer.phone_number)
+    if staff is not None:
+        current = staff.role.name if staff.role else None
+        if current and current not in _grantable(user):
+            raise BusinessError("FORBIDDEN", f"{customer.full_name} is {current}; only someone above can change that.", 403)
+        _guard_staff_change(db, user, staff, new_role=payload.role, deactivate=False)
+        old = _user_out(staff)
+        staff.role_id = _ensure_role(db, payload.role).id
+        staff.is_active = True
+    else:
+        if not customer.password_hash and not payload.password:
+            raise BusinessError("VALIDATION_ERROR", f"{customer.full_name} has no password yet. Set one for their staff login.", 422)
+        _guard_staff_change(db, user, None, new_role=payload.role, deactivate=False)
+        old = None
+        staff = StaffUser(full_name=customer.full_name[:50], phone_number=customer.phone_number, email=customer.email,
+                          role_id=_ensure_role(db, payload.role).id, is_active=True,
+                          password_hash=customer.password_hash or hash_password(payload.password))
+        db.add(staff)
+    if payload.password and staff.password_hash and old is not None:
+        staff.password_hash = hash_password(payload.password)
+    if payload.shop_id is not None:
+        from app.modules.shops.service import get_shop
+        staff.shop_id = get_shop(db, payload.shop_id).id
+    else:
+        staff.shop_id = None
+    if user.shop_id is not None and staff.shop_id != user.shop_id:
+        raise BusinessError("FORBIDDEN", "You can only give roles in your own shop.", 403)
+    db.flush()
+    db.refresh(staff)
+    before = old["role"] if old and old.get("is_active") else "Customer"
+    _record_role_change(db, user, staff, old=old, reason=reason, what=f"role {before} → {payload.role}")
+    db.commit()
+    return ok(_person_out(customer, staff, _active_khata(db, customer.id)))
+
+
+@router.post("/registered-users/{customer_id}/role/remove", dependencies=_change_limit)
+def remove_role(customer_id: UUID, payload: RemoveRoleIn, db: Session = Depends(get_db),
+                user: StaffUser = Depends(people_admin)):
+    """Take the staff role away: the staff login is switched off; the customer account stays."""
+    reason = _confirm_change(user, payload.confirm_password, payload.reason)
+    customer = db.get(Customer, customer_id)
+    if customer is None:
+        raise BusinessError("NOT_FOUND", "User not found.", 404)
+    staff = _staff_for(db, customer.phone_number)
+    if staff is None or not staff.is_active:
+        return ok(_person_out(customer, staff, _active_khata(db, customer.id)))
+    current = staff.role.name if staff.role else None
+    if current and current not in _grantable(user):
+        raise BusinessError("FORBIDDEN", f"{customer.full_name} is {current}; only someone above can change that.", 403)
+    _guard_staff_change(db, user, staff, new_role=None, deactivate=True)
+    old = _user_out(staff)
+    staff.is_active = False
+    db.flush()
+    _record_role_change(db, user, staff, old=old, reason=reason, what=f"role {current} → Customer (staff login off)")
+    db.commit()
+    return ok(_person_out(customer, staff, _active_khata(db, customer.id)))
+
+
+
+@router.get("/role-history")
+def role_history(db: Session = Depends(get_db), user: StaffUser = Depends(people_admin)):
+    """Every role / access change, newest first: who changed whom, from what to what, why and when."""
+    from app.core.audit import AuditLog
+    rows = db.scalars(select(AuditLog).where(AuditLog.action == "role_change")
+                      .order_by(AuditLog.created_at.desc()).limit(300)).all()
+    names = {str(s.id): s.full_name for s in db.query(StaffUser).all()}
+    out = []
+    for r in rows:
+        new, old = r.new_value or {}, r.old_value or {}
+        out.append({"id": str(r.id), "at": r.created_at.isoformat() if r.created_at else None,
+                    "by": names.get(str(r.actor_id), new.get("changed_by", "—")),
+                    "user": new.get("full_name") or names.get(str(r.entity_id), "—"), "phone": new.get("phone_number"),
+                    "change": new.get("change"), "from_role": old.get("role"), "to_role": new.get("role"),
+                    "reason": new.get("reason")})
+    return ok(out)

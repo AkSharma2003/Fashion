@@ -26,6 +26,7 @@ class VariantResponse(BaseModel):
 # Adjust stock quantity
 class StockAdjustment(BaseModel):
     variant_id: UUID
+    shop_id: UUID | None = None
     quantity_delta: int
     reason: str = Field(min_length=1, max_length=500)
 
@@ -40,6 +41,7 @@ class StockResponse(BaseModel):
 # Record physical stock count
 class StockCountCreate(BaseModel):
     variant_id: UUID
+    shop_id: UUID | None = None
     counted_quantity: int = Field(ge=0)
     reason: str = Field(min_length=1, max_length=500)
 

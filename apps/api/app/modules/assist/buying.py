@@ -80,7 +80,10 @@ def forecast_series(series: dict[date, int], today: date) -> dict:
 
 
 def stock_map(db: Session) -> dict:
-    return {l.variant_id: l.on_hand - l.reserved for l in db.scalars(select(StockLevel)).all()}
+    """Available stock per variant, all shops together (what-to-buy looks at the whole business)."""
+    from app.modules.inventory import stock
+    ids = list(db.scalars(select(StockLevel.variant_id).distinct()))
+    return {vid: av for vid, (_on, av) in stock.totals(db, ids).items()}
 
 
 def build_forecasts(db: Session, save: bool = True) -> list[dict]:

@@ -1,3 +1,4 @@
+import { STORE_NAME } from "../lib/brand";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiData, errorMessage } from "../lib/api/client";
@@ -19,7 +20,7 @@ export default function ChatWidget() {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const end = useRef<HTMLDivElement>(null);
 
-  useEffect(() => end.current?.scrollIntoView({ behavior: "smooth" }), [msgs, open]);
+  useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, open]);
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -49,14 +50,14 @@ export default function ChatWidget() {
       {open && (
         <section className="mb-3 flex h-[min(520px,75vh)] w-[min(360px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-divider bg-white shadow-2xl">
           <header className="flex items-center justify-between bg-primary px-4 py-3 text-white">
-            <span className="font-semibold">WearVerse · {t("Ask us")}</span>
+            <span className="font-semibold">{STORE_NAME} · {t("Ask us")}</span>
             <button type="button" onClick={() => setOpen(false)} aria-label="Close chat" className="rounded p-1 hover:bg-white/10">✕</button>
           </header>
           <div className="flex-1 space-y-3 overflow-y-auto p-3 text-sm">
-            <p className="rounded-lg bg-Alt_background p-2 text-xs text-text">{notice || "You are chatting with the WearVerse AI assistant. For anything urgent, call or WhatsApp the shop."}</p>
+            <p className="rounded-lg bg-Alt_background p-2 text-xs text-text">{notice || `You are chatting with the ${STORE_NAME} AI assistant. For anything urgent, call or WhatsApp the shop.`}</p>
             {msgs.map((m, i) => (
               <div key={i} className={m.role === "user" ? "text-right" : ""}>
-                <p className={`inline-block max-w-[85%] rounded-2xl px-3 py-2 text-left ${m.role === "user" ? "bg-primary text-white" : "bg-gray-100 text-main_text"}`}>{m.text}</p>
+                <p className={`inline-block max-w-[85%] whitespace-pre-line rounded-2xl px-3 py-2 text-left ${m.role === "user" ? "bg-primary text-white" : "bg-gray-100 text-main_text"}`}>{m.text}</p>
                 {m.products && m.products.length > 0 && (
                   <div className="mt-2 flex gap-2 overflow-x-auto">
                     {m.products.slice(0, 3).map((p) => (
