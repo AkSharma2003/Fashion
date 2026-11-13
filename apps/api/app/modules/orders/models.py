@@ -40,6 +40,8 @@ class OrderItem(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     order_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orders.id"), index=True)
     variant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("variants.id"))
+    # Shop whose stock this line is held from and which bills it (each shop invoices its own goods).
+    shop_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("shops.id"), nullable=True, index=True)
     product_name: Mapped[str] = mapped_column(String(200))
     sku: Mapped[str] = mapped_column(String(64))
     size: Mapped[str | None] = mapped_column(String(50), nullable=True)

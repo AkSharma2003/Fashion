@@ -31,6 +31,10 @@ def ensure_user(db, roles, *, phone, name, role, password=None, pin=None) -> Sta
     if user is None:
         user = StaffUser(full_name=name, phone_number=phone, role_id=roles[role].id, is_active=True)
         db.add(user)
+    else:
+        # Re-running the seed for this phone restores its role and switches it on (e.g. Owner role lost).
+        user.role_id = roles[role].id
+        user.is_active = True
     if password:
         user.password_hash = hash_password(password)
     if pin:
@@ -91,8 +95,11 @@ def main() -> None:
     args = parser.parse_args()
     with SessionLocal() as db:
         roles = ensure_roles(db)
-        if not db.scalar(select(Counter).where(Counter.code == "C1")):
-            db.add(Counter(code="C1", name="Counter 1"))
+        from app.modules.shops.service import ensure_default_shops
+        shops = {s.code: s for s in ensure_default_shops(db)}
+        for code, shop_code in (("SSS-C1", "SSS"), ("SS-C1", "SS"), ("SK-C1", "SK")):
+            if not db.scalar(select(Counter).where(Counter.code == code)):
+                db.add(Counter(code=code, name=f"{shops[shop_code].name} counter 1", shop_id=shops[shop_code].id))
         if args.phone:
             ensure_user(db, roles, phone=args.phone, name=args.name, role="Owner", password=args.password, pin=args.pin)
         if args.demo:

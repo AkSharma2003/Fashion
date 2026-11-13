@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Alert, Badge, Button, Card, Field, Input, Loading, Modal, Money, Page, Select, Table } from "../../components/ui";
 import { apiData, post } from "../../lib/api/client";
 import { useAction, useApi } from "../../lib/hooks/useApi";
+import { hasRole, useStaff } from "../../lib/auth/staff";
 import { formatDate } from "../../lib/money";
 
 export type BillItem = { id: string; product_name: string; sku: string | null; qty: number; unit_price_paise: number;
@@ -44,7 +45,8 @@ export function BillModal({ bill, onClose }: { bill: Bill; onClose: () => void }
   const [mode, setMode] = useState(bill.payments.some((p) => p.mode === "KHATA") ? "KHATA" : "CASH");
   const [pin, setPin] = useState("");
   const [reason, setReason] = useState("");
-  const canReturn = bill.source === "pos" && bill.status !== "RETURNED";
+  const { me } = useStaff();
+  const canReturn = bill.source === "pos" && bill.status !== "RETURNED" && hasRole(me, "Cashier", "Manager");
 
   return (
     <Modal open title={`Bill ${bill.bill_no}`} onClose={onClose} wide>

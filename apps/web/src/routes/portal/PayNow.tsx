@@ -1,3 +1,4 @@
+import { STORE_NAME } from "../../lib/brand";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Alert, Button, Input, Loading } from "../../components/ui";
@@ -35,7 +36,7 @@ export default function PayNow() {
         return;
       }
       await openRazorpay({ keyId: start.key_id, orderId: start.razorpay_order_id, amountPaise: start.amount_paise,
-        name: p?.shop_name ?? "WearVerse", description: "Khata payment", prefill: start.prefill,
+        name: p?.shop_name ?? STORE_NAME, description: "Khata payment", prefill: start.prefill,
         onDone: () => { setState("waiting"); window.setTimeout(() => { void portal.reload(); setState("done"); }, 4000); },
         onDismiss: () => setState("idle") });
     } catch (err) {
@@ -47,7 +48,7 @@ export default function PayNow() {
   return (
     <main className="min-h-screen bg-background px-4 py-8 text-main_text">
       <div className="mx-auto max-w-md space-y-5">
-        <div className="flex items-center justify-between"><h1 className="font-primaryFont text-3xl font-semibold text-primary">{p?.shop_name ?? "WearVerse"}</h1></div>
+        <div className="flex items-center justify-between"><h1 className="font-primaryFont text-3xl font-semibold text-primary">{p?.shop_name ?? STORE_NAME}</h1></div>
         {portal.loading && !p && <Loading />}
         {portal.error && <Alert>{portal.error}</Alert>}
         {p && (

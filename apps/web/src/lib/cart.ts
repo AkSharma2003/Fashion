@@ -1,5 +1,6 @@
 
 import type { ClothingCardProduct } from "../components/Card";
+import { scheduleSave } from "./shoppingSync";
 
 export type CartItem = {
   product: ClothingCardProduct;
@@ -45,13 +46,19 @@ export function getCart(): CartItem[] {
   }
 }
 
-function saveCart(items: CartItem[]) {
+function saveCart(items: CartItem[], saveToAccount = true) {
   try {
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-    window.dispatchEvent(new Event(CART_EVENT));
   } catch {
-    // Browser storage unavailable hone par storefront chalta rahega.
+    // Storage blocked: the storefront keeps working for this page.
   }
+  window.dispatchEvent(new Event(CART_EVENT));
+  if (saveToAccount) scheduleSave();
+}
+
+/** Replace the whole bag (used when loading it from the account, or clearing it at sign-out). */
+export function replaceCart(items: CartItem[], saveToAccount = true) {
+  saveCart(items, saveToAccount);
 }
 
 export function cartUpdatedEventName() {

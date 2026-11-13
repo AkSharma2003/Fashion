@@ -52,6 +52,9 @@ class KhataService:
 
         if not khata.is_active:
             raise ValueError("Khata is already inactive.")
+        if khata.balance_paise != 0:
+            # Money still owed (or held as advance) must be settled first, or it would drop out of sight.
+            raise ValueError("This khata still has a balance. Settle it before closing the khata.")
 
         return self.khata_repo.deactivate(khata)
     

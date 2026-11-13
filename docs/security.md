@@ -20,6 +20,8 @@ What protects the shop's money, stock and customer data, and what must be set up
 | Prices changed on a device | Server decides price and tax; device values are only compared | `pos/service.py` |
 | Double charges or double bills | Idempotency keys on bills, returns, checkout; unique `WV-` references to Tally | `pos`, `orders`, `tally` |
 | Data sent to the AI provider | Only product facts, FAQ and placeholder names; no phone numbers, balances or salaries; feature switches and budget | `assist/gateway.py`, [architecture/ai.md](architecture/ai.md) |
+| Secrets inside Docker images | `.dockerignore` in api, worker and ai-service keeps `.env`, `.venv`, tests and media out of images | `apps/*/.dockerignore` |
+| Dodging rate limits with a fake IP | The limiter uses the last `X-Forwarded-For` entry (added by Caddy), not the first one the client can set | `app/core/ratelimit.py` |
 | Script in product text on SEO pages | JSON-LD escaped (`</` → `<\/`), HTML escaped | `modules/store/router.py` |
 
 ## Must do before going live

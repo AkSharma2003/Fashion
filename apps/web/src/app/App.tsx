@@ -36,6 +36,8 @@ const ReportsPage = lazy(() => import("../pages/backoffice/ReportsPage"));
 const SettingsPage = lazy(() => import("../pages/backoffice/SettingsPage"));
 const MyStatementPage = lazy(() => import("../pages/backoffice/MyStatementPage"));
 const AiToolsPage = lazy(() => import("../pages/backoffice/AiToolsPage"));
+const UsersPage = lazy(() => import("../pages/backoffice/UsersPage"));
+const StaffProfile = lazy(() => import("../pages/StaffProfile"));
 
 function App() {
   return (
@@ -75,6 +77,7 @@ function App() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="me" element={<MyStatementPage />} />
         <Route path="ai" element={<AiToolsPage />} />
+        <Route path="users" element={<UsersPage />} />
       </Route>
 
       {/* Shop counter (works offline) */}
@@ -82,6 +85,7 @@ function App() {
 
       {/* Khata customer pays from home */}
       <Route path="/pay/:token" element={<PayNow />} />
+      <Route path="/me" element={<StaffProfile />} />
     </Routes>
     </Suspense>
   );

@@ -1,4 +1,5 @@
 import { clearSession, getAccessToken, getRefreshToken, setAccessToken } from "../auth/session";
+import { getSelectedShop } from "../shops";
 
 const BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
@@ -53,6 +54,9 @@ export async function api<T>(path: string, init: RequestInit = {}, retried = fal
   }
   if (token && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${token}`);
+    // The shop picked in the back-office header (staff tied to one shop always get their own).
+    const shop = getSelectedShop();
+    if (shop && shop !== "all" && !headers.has("X-Shop-Id")) headers.set("X-Shop-Id", shop);
   }
 
   let response: Response;
@@ -143,12 +147,32 @@ export type Product = {
   barcode: string | null;
   category: string;
   selling_price_paise: number;
+  mrp_paise?: number | null;
+  gst_rate_bp?: number | null;
+  hsn_code?: string | null;
+  fall_pico_eligible?: boolean;
   is_active: boolean;
+  // Back-office list extras
+  variant_count?: number;
+  stock_on_hand?: number;
+  colors?: string[];
+  image_url?: string | null;
 };
 
-/** Fetch active products from the backend. */
-export async function getProducts(): Promise<Product[]> {
-  return api<Product[]>("/catalog/");
+/** Fetch products from the backend (archived ones too when asked). */
+export async function getProducts(includeInactive = false): Promise<Product[]> {
+  return api<Product[]>(`/catalog/${includeInactive ? "?include_inactive=true" : ""}`);
+}
+
+export type DeleteResult = { deleted: boolean; archived: boolean; message: string };
+
+/** Delete for good when the product was never sold or stocked; otherwise the API archives it. */
+export async function deleteProductPermanently(productId: string): Promise<DeleteResult> {
+  return api<DeleteResult>(`/catalog/${productId}/permanent`, { method: "DELETE" });
+}
+
+export async function deleteVariantPermanently(productId: string, variantId: string): Promise<DeleteResult> {
+  return api<DeleteResult>(`/catalog/${productId}/variants/${variantId}/permanent`, { method: "DELETE" });
 }
 
 
@@ -159,6 +183,10 @@ export type ProductCreateInput = {
   barcode?: string | null;
   category: string;
   selling_price_paise: number;
+  mrp_paise?: number | null;
+  gst_rate_bp?: number | null;
+  hsn_code?: string | null;
+  fall_pico_eligible?: boolean;
 };
 
 export type ProductUpdateInput = Partial<ProductCreateInput> & {
@@ -204,6 +232,8 @@ export type ProductVariant = {
   selling_price_paise: number;
   stock_quantity: number;
   is_active: boolean;
+  /** Stock in each shop (stock_quantity above is all shops together). */
+  by_shop?: { shop_id: string; on_hand: number; available: number }[];
 };
 
 /** Fetch active variants belonging to a product. */
@@ -288,6 +318,10 @@ export function post<T>(path: string, body?: unknown): Promise<T> {
 
 export function patch<T>(path: string, body: unknown): Promise<T> {
   return apiData<T>(path, { method: "PATCH", body: JSON.stringify(body) });
+}
+
+export function del<T>(path: string): Promise<T> {
+  return apiData<T>(path, { method: "DELETE" });
 }
 
 export function errorMessage(err: unknown, fallback = "Something went wrong."): string {

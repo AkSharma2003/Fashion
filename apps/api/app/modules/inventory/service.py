@@ -11,7 +11,7 @@ from app.modules.inventory import repository, stock
 from app.modules.inventory.models import ProductVariant, StockLevel, StockMovement
 
 
-def create_variant(db: Session, payload):
+def create_variant(db: Session, payload, shop_id: UUID | None = None):
     # Check that the product exists and is active.
     product = db.get(Product, payload.product_id)
 
@@ -45,7 +45,7 @@ def create_variant(db: Session, payload):
                 code=payload.barcode,
             )
 
-        level = repository.create_stock_level(db, variant.id)
+        level = repository.create_stock_level(db, variant.id, shop_id)
 
         db.commit()
         db.refresh(variant)
@@ -67,8 +67,11 @@ def create_variant(db: Session, payload):
         raise
 
 
-def get_stock(db: Session, variant_id: UUID | None = None):
-    levels = repository.list_stock_levels(db, variant_id)
+def get_stock(db: Session, variant_id: UUID | None = None, shop_id: UUID | None = None):
+    """One row per variant and shop (only the given shop when one is picked)."""
+    from app.modules.shops.models import Shop
+    levels = repository.list_stock_levels(db, variant_id, shop_id)
+    shops = {s.id: s for s in db.scalars(select(Shop)).all()}
     result = []
 
     for level in levels:
@@ -90,12 +93,14 @@ def get_stock(db: Session, variant_id: UUID | None = None):
             "on_hand": level.on_hand,
             "reserved": level.reserved,
             "available": level.on_hand - level.reserved,
+            "shop_id": str(level.shop_id),
+            "shop": shops[level.shop_id].code if level.shop_id in shops else None,
         })
 
     return result
 
 
-def adjust_stock(db: Session, payload, actor_id: str | None = None):
+def adjust_stock(db: Session, payload, actor_id: str | None = None, shop_id: UUID | None = None):
     if payload.quantity_delta == 0:
         raise HTTPException(
             status_code=400,
@@ -103,13 +108,10 @@ def adjust_stock(db: Session, payload, actor_id: str | None = None):
         )
 
     try:
-        level = repository.get_stock_level(db, payload.variant_id, for_update=True)
-
+        level = repository.get_stock_level(db, payload.variant_id, for_update=True, shop_id=shop_id)
         if level is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Stock level not found for this variant",
-            )
+            # First stock of this item in this shop.
+            level = stock.lock_level(db, payload.variant_id, shop_id)
 
         new_quantity = level.on_hand + payload.quantity_delta
 
@@ -127,7 +129,7 @@ def adjust_stock(db: Session, payload, actor_id: str | None = None):
 
         stock.move(
             db, payload.variant_id, payload.quantity_delta, "adjustment",
-            source="adjustment", reason=payload.reason, actor_id=actor_id,
+            source="adjustment", reason=payload.reason, actor_id=actor_id, shop_id=level.shop_id,
         )
         write_audit(db, actor_id=actor_id, action="stock_adjust", entity="variant",
                     entity_id=str(payload.variant_id),
@@ -150,19 +152,16 @@ def adjust_stock(db: Session, payload, actor_id: str | None = None):
         raise
 
 
-def create_stock_count(db: Session, payload, actor_id: str | None = None):
+def create_stock_count(db: Session, payload, actor_id: str | None = None, shop_id: UUID | None = None):
     try:
         level = repository.get_stock_level(
             db,
             payload.variant_id,
             for_update=True,
+            shop_id=shop_id,
         )
-
         if level is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Stock level not found for this variant",
-            )
+            level = stock.lock_level(db, payload.variant_id, shop_id)
 
         expected = level.on_hand
         difference = payload.counted_quantity - expected
@@ -179,6 +178,7 @@ def create_stock_count(db: Session, payload, actor_id: str | None = None):
             expected_quantity=expected,
             counted_quantity=payload.counted_quantity,
             reason=payload.reason,
+            shop_id=level.shop_id,
         )
 
         if difference != 0:
@@ -187,7 +187,7 @@ def create_stock_count(db: Session, payload, actor_id: str | None = None):
                 db, payload.variant_id, difference, "stock_count", source="adjustment",
                 reason=payload.reason, reference_type="stock_count",
                 reference_id=str(stock_count.id), actor_id=actor_id, allow_negative=True,
-                alert_on_negative=False,
+                alert_on_negative=False, shop_id=level.shop_id,
             )
 
         db.commit()
@@ -207,18 +207,16 @@ def create_stock_count(db: Session, payload, actor_id: str | None = None):
         raise
 
 
-def list_movements(db: Session, variant_id: UUID, limit: int = 100):
-    rows = db.scalars(
-        select(StockMovement)
-        .where(StockMovement.variant_id == variant_id)
-        .order_by(StockMovement.created_at.desc())
-        .limit(limit)
-    ).all()
+def list_movements(db: Session, variant_id: UUID, limit: int = 100, shop_id: UUID | None = None):
+    stmt = select(StockMovement).where(StockMovement.variant_id == variant_id)
+    if shop_id is not None:
+        stmt = stmt.where(StockMovement.shop_id == shop_id)
+    rows = db.scalars(stmt.order_by(StockMovement.created_at.desc()).limit(limit)).all()
     return [
         {
             "id": str(m.id), "quantity_delta": m.quantity_delta, "movement_type": m.movement_type,
             "source": m.source, "reason": m.reason, "reference_type": m.reference_type,
-            "reference_id": m.reference_id, "created_by": m.created_by,
+            "reference_id": m.reference_id, "created_by": m.created_by, "shop_id": str(m.shop_id),
             "created_at": m.created_at.isoformat() if m.created_at else None,
         }
         for m in rows

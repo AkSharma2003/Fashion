@@ -14,12 +14,24 @@ SYNONYMS = {
     "purple": "purple", "baingani": "purple", "golden": "golden", "sunehra": "golden", "silver": "silver", "cream": "cream", "beige": "beige",
     # fabrics and occasions
     "silk": "silk", "resham": "silk", "cotton": "cotton", "suti": "cotton", "georgette": "georgette", "chiffon": "chiffon",
-    "banarasi": "banarasi", "kanjivaram": "kanjivaram", "wedding": "wedding", "shaadi": "wedding", "shadi": "wedding",
+    "banarasi": "banarasi", "kanjivaram": "kanjivaram", "kanjeevaram": "kanjivaram", "kanchipuram": "kanjivaram",
+    "teal": "teal", "wine": "wine", "peach": "peach", "lavender": "lavender", "mustard": "mustard", "navy": "navy",
+    "mint": "mint", "rust": "rust", "magenta": "magenta", "rani": "pink", "gold": "golden", "grey": "grey", "gray": "grey",
+    "frock": "frock", "sherwani": "sherwani", "dhoti": "dhoti", "petticoat": "petticoat", "sharara": "sharara",
+    "patiala": "patiala", "chikankari": "chikankari", "bandhani": "bandhani", "bandhej": "bandhani",
+    "ladki": "girls", "girl": "girls", "girls": "girls", "ladka": "boys", "boy": "boys", "boys": "boys", "wedding": "wedding", "shaadi": "wedding", "shadi": "wedding",
     "party": "party", "festive": "festive", "tyohar": "festive", "daily": "daily", "office": "office", "casual": "casual",
 }
-COLOURS = {"red", "maroon", "blue", "green", "yellow", "pink", "black", "white", "orange", "purple", "golden", "silver", "cream", "beige"}
+COLOURS = {"red", "maroon", "blue", "green", "yellow", "pink", "black", "white", "orange", "purple", "golden", "silver", "cream",
+           "beige", "teal", "wine", "peach", "lavender", "mustard", "navy", "mint", "rust", "magenta", "grey"}
 STOP = {"a", "an", "the", "for", "and", "or", "with", "in", "of", "to", "me", "show", "i", "want", "need", "ke", "ka", "ki",
-        "liye", "chahiye", "dikhao", "under", "below", "above", "less", "than", "rs", "inr", "rupees", "ka", "wala", "wali", "se", "kam"}
+        "liye", "chahiye", "dikhao", "under", "below", "above", "less", "than", "rs", "inr", "rupees", "ka", "wala", "wali", "se", "kam",
+        # Hinglish question and filler words that are not about the product itself
+        "andar", "tak", "niche", "neeche", "upar", "hai", "hain", "kya", "koi", "ho", "mujhe", "hume", "humko", "do", "dena",
+        "batao", "bataiye", "price", "rate", "cost", "kitne", "kitna", "kitni", "available", "milega", "milegi", "please",
+        "pls", "you", "have", "any", "is", "are", "there", "what", "which", "can", "get", "buy", "your", "my", "mera",
+        "meri", "also", "bhi", "aur", "ya", "per", "par", "budget", "max", "only", "sirf", "wale", "waale", "ji",
+        "size", "sizes", "colour", "colours", "color", "colors", "rang", "design", "designs", "new", "naya", "nayi", "latest"}
 
 
 def tokenize(text: str | None) -> list[str]:

@@ -59,7 +59,7 @@ class SyncIssue(Base):
     __tablename__ = "sync_issues"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    direction: Mapped[str] = mapped_column(String(8))              # to_tally | from_tally
+    direction: Mapped[str] = mapped_column(String(16))             # to_tally | from_tally
     reason_code: Mapped[str] = mapped_column(String(48))           # UNKNOWN_PARTY, UNKNOWN_ITEM, TALLY_ERROR, ...
     message: Mapped[str] = mapped_column(Text)
     outbox_event_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("outbox_events.id"), nullable=True)

@@ -11,7 +11,13 @@ import {
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useT } from "../lib/i18n";
 import ChatWidget from "./ChatWidget";
-import { getAccessToken, getCustomerToken } from "../lib/auth/session";
+import SafeBoundary from "./SafeBoundary";
+import { BACK_OFFICE_ROLES, getAccessToken, getStaffRole, staffHome } from "../lib/auth/session";
+import { useCustomerProfile } from "../lib/customer";
+import { wishlistCount, wishlistUpdatedEventName } from "../lib/wishlist";
+import { cartUpdatedEventName, getCart } from "../lib/cart";
+import AccountMenu from "./account/AccountMenu";
+import Avatar from "./account/Avatar";
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -19,9 +25,20 @@ function Header() {
   const navigate = useNavigate();
   const { t } = useT();
   // Signed-in people see where to go instead of "Login".
-  const account = getAccessToken()
-    ? { to: "/backoffice", label: "Back office" }
-    : getCustomerToken() ? { to: "/account", label: "My account" } : { to: "/login", label: "Login" };
+  const { profile, signedIn } = useCustomerProfile();
+  const [saved, setSaved] = useState(wishlistCount);
+  const bagCount = () => getCart().reduce((n, item) => n + item.quantity, 0);
+  const [inBag, setInBag] = useState(bagCount);
+  useEffect(() => {
+    const sync = () => { setSaved(wishlistCount()); setInBag(bagCount()); };
+    for (const ev of [wishlistUpdatedEventName(), cartUpdatedEventName(), "storage"]) window.addEventListener(ev, sync);
+    return () => { for (const ev of [wishlistUpdatedEventName(), cartUpdatedEventName(), "storage"]) window.removeEventListener(ev, sync); };
+  }, []);
+  const staff = Boolean(getAccessToken());
+  const staffRole = getStaffRole();
+  const account = staff
+    ? (BACK_OFFICE_ROLES.includes(staffRole ?? "") ? { to: staffHome(staffRole), label: "Back office" } : { to: "/me", label: "My profile" })
+    : { to: "/login", label: "Login" };
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -158,30 +175,41 @@ function Header() {
             {/* Wishlist */}
             <Link
               to="/wishlist"
-              aria-label="Wishlist"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-gray-700 transition hover:text-primary"
+              aria-label={`Wishlist${saved ? `, ${saved} saved` : ""}`}
+              className="relative flex h-11 w-11 items-center justify-center rounded-full text-gray-700 transition hover:text-primary"
               title="Wishlist"
             >
               <Heart
                 size={20}
                 className="sm:w-[23px] sm:h-[23px]"
               />
+              {saved > 0 && (
+                <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-sale px-1 text-[10px] font-bold text-white">
+                  {saved > 99 ? "99+" : saved}
+                </span>
+              )}
             </Link>
 
             {/* Cart */}
             <Link
               to="/cart"
-              aria-label="Cart"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-gray-700 transition hover:text-primary"
-              title="Cart"
+              aria-label={`Bag${inBag ? `, ${inBag} items` : ""}`}
+              className="relative flex h-11 w-11 items-center justify-center rounded-full text-gray-700 transition hover:text-primary"
+              title="Bag"
             >
               <ShoppingCart
                 size={20}
                 className="sm:w-[23px] sm:h-[23px]"
               />
+              {inBag > 0 && (
+                <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+                  {inBag > 99 ? "99+" : inBag}
+                </span>
+              )}
             </Link>
 
-            {/* Login */}
+            {/* Signed-in customer: photo or first letter; otherwise Login / Back office */}
+            {signedIn && !staff ? <AccountMenu profile={profile} /> : (
             <Link
               to={account.to}
               className="hidden lg:flex items-center gap-2 bg-primary text-white px-4 xl:px-5 py-2 xl:py-2.5 rounded-lg hover:bg-primary-dark transition"
@@ -189,6 +217,7 @@ function Header() {
               <User size={18} />
               {t(account.label)}
             </Link>
+            )}
 
             {/* Mobile Menu */}
             <button
@@ -261,6 +290,16 @@ function Header() {
                 <Link to="/contact" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-gray-700 transition-all duration-200 hover:translate-x-1 hover:bg-primary/10 hover:text-primary active:bg-primary/15">
                   Contact Us
                 </Link>
+                {signedIn && !staff ? (
+                  <Link to="/account?tab=profile" onClick={() => setMenuOpen(false)}
+                    className="mt-2 flex min-h-14 items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
+                    <Avatar name={profile?.full_name} photo={profile?.profile_photo_url} size={40} />
+                    <span className="min-w-0">
+                      <span className="block truncate font-semibold text-gray-900">{profile?.full_name ?? "My account"}</span>
+                      <span className="block text-xs text-gray-500">View profile, orders and addresses</span>
+                    </span>
+                  </Link>
+                ) : (
                 <Link
                   to={account.to}
                   onClick={() => setMenuOpen(false)}
@@ -269,13 +308,14 @@ function Header() {
                   <User size={18} aria-hidden="true" />
                   {t(account.label)}
                 </Link>
+                )}
               </div>
             </nav>
           </>
         )}
 
       </div>
-      <ChatWidget />
+      <SafeBoundary><ChatWidget /></SafeBoundary>
     </header>
   );
 }

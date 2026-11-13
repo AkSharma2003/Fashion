@@ -63,7 +63,7 @@ class StockLevel(Base):
     # because reserve() checks on_hand - reserved inside a row lock.
     __table_args__ = (
         CheckConstraint("reserved >= 0", name="ck_stock_levels_reserved_nonnegative"),
-        UniqueConstraint("variant_id", name="uq_stock_levels_variant"),
+        UniqueConstraint("variant_id", "shop_id", name="uq_stock_levels_variant_shop"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -72,6 +72,8 @@ class StockLevel(Base):
     variant_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("variants.id"), nullable=False, index=True
     )
+    # Each shop keeps its own stock of a variant.
+    shop_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("shops.id"), nullable=False, index=True)
     on_hand: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     reserved: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
@@ -95,6 +97,7 @@ class StockMovement(Base):
         ForeignKey("variants.id"), nullable=False, index=True
     )
     quantity_delta: Mapped[int] = mapped_column(Integer, nullable=False)
+    shop_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("shops.id"), nullable=False, index=True)
     movement_type: Mapped[str] = mapped_column(String(40), nullable=False)
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     reference_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
@@ -119,6 +122,7 @@ class StockCount(Base):
     variant_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("variants.id"), nullable=False, index=True
     )
+    shop_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("shops.id"), nullable=True, index=True)
     expected_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     counted_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)

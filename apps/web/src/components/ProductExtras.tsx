@@ -1,3 +1,4 @@
+import { STORE_NAME } from "../lib/brand";
 import { useState } from "react";
 import { apiData, errorMessage, post } from "../lib/api/client";
 import { getCustomerToken } from "../lib/auth/session";
@@ -22,8 +23,8 @@ export default function ProductExtras({ productId }: { productId: string }) {
   const detail = useApi(() => apiData<Detail>(`/store/products/${productId}`), [productId]);
   const d = detail.data;
   useSeo({
-    title: d ? `${d.name} | WearVerse` : "WearVerse",
-    description: d?.description ?? (d ? `${d.name} from WearVerse` : undefined),
+    title: d ? `${d.name} | ${STORE_NAME}` : STORE_NAME,
+    description: d?.description ?? (d ? `${d.name} from ${STORE_NAME}` : undefined),
     image: d?.images?.[0] ?? undefined,
     jsonLd: d ? {
       "@context": "https://schema.org", "@type": "Product", name: d.name, category: d.category,
@@ -41,8 +42,8 @@ export default function ProductExtras({ productId }: { productId: string }) {
       {d && d.sizes.length > 0 && !d.sizes.every((s) => /free/i.test(s)) && <SizeHelper productId={productId} />}
       {[...groups.entries()].map(([reason, items]) => (
         <section key={reason}>
-          <h2 className="mb-4 font-primaryFont text-2xl font-semibold text-main_text">{t(REASONS[reason] ?? "You may also like")}</h2>
-          <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:gap-6 lg:grid-cols-4">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-main_text">{t(REASONS[reason] ?? "You may also like")}</h2>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-4 md:grid-cols-4 xl:grid-cols-5">
             {items.slice(0, 4).map((r) => <Card key={r.product_id} product={toCardProduct(r.product)} />)}
           </div>
         </section>
@@ -70,7 +71,7 @@ function SizeHelper({ productId }: { productId: string }) {
 
   const input = "min-h-11 w-full rounded-lg border border-gray-300 px-3 outline-none focus:border-primary";
   return (
-    <section className="rounded-2xl border border-divider bg-white p-5">
+    <section id="size-help" className="scroll-mt-24 rounded-2xl border border-divider bg-white p-5">
       <button type="button" className="font-semibold text-primary underline" onClick={() => setOpen((o) => !o)}>📏 {t("Find my size")}</button>
       {open && (
         <div className="mt-4 grid gap-3 sm:grid-cols-5">

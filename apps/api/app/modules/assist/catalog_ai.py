@@ -180,8 +180,13 @@ def recommend(db: Session, *, product_id: UUID | None, customer_id: UUID | None,
 
 # ---- smart search (AI-3) -----------------------------------------------------------------
 
-PRICE_UNDER = re.compile(r"(?:under|below|less than|upto|up to|within|se kam|tak|<)\s*(?:rs\.?|₹|inr)?\s*(\d[\d,]*)\s*(k)?", re.I)
-PRICE_OVER = re.compile(r"(?:above|over|more than|se upar|from|>)\s*(?:rs\.?|₹|inr)?\s*(\d[\d,]*)\s*(k)?", re.I)
+PRICE_UNDER = re.compile(r"(?:under|below|less than|upto|up to|within|se kam|tak|<)\s*(?:rs\.?|₹|inr)?\s*(\d[\d,]*)\s*(k(?![a-z]))?", re.I)
+# Hinglish puts the amount first: "5000 ke andar", "5k tak", "3000 se kam", "budget 4000".
+PRICE_UNDER_AFTER = re.compile(r"(?:budget\s*)?(?:rs\.?|₹)?\s*(\d[\d,]*)\s*(k(?![a-z]))?\s*(?:rs|rupees|rupaye|₹)?\s*"
+                               r"(?:ke andar|ke under|ke niche|ke neeche|ke bhitar|tak|se kam|or less|max|maximum)", re.I)
+PRICE_BUDGET = re.compile(r"budget\s*(?:hai|is|of)?\s*(?:rs\.?|₹)?\s*(\d[\d,]*)\s*(k(?![a-z]))?", re.I)
+PRICE_OVER_AFTER = re.compile(r"(?:rs\.?|₹)?\s*(\d[\d,]*)\s*(k(?![a-z]))?\s*(?:rs|rupees|₹)?\s*(?:se upar|se zyada|ke upar|or more|plus)", re.I)
+PRICE_OVER = re.compile(r"(?:above|over|more than|se upar|from|>)\s*(?:rs\.?|₹|inr)?\s*(\d[\d,]*)\s*(k(?![a-z]))?", re.I)
 SIZES = {"xs", "s", "m", "l", "xl", "xxl", "3xl", "free"}
 
 
@@ -190,17 +195,37 @@ def _amount(m) -> int:
     return value * (1000 if m.group(2) else 1) * 100
 
 
+# A customer asking for "blue" also means navy, sky blue and royal blue, and so on.
+COLOUR_FAMILIES = {
+    "blue": {"navy", "teal"}, "red": {"maroon", "wine", "rust"}, "pink": {"magenta", "peach"},
+    "green": {"mint", "teal"}, "yellow": {"mustard", "lemon", "golden"}, "white": {"cream"},
+    "purple": {"lavender", "wine", "magenta"}, "orange": {"rust", "peach"}, "golden": {"mustard"},
+}
+
+
+def colour_family(tokens: set[str]) -> set[str]:
+    """The product's colour words plus the basic colours they belong to (navy -> blue)."""
+    out = set(tokens)
+    for basic, members in COLOUR_FAMILIES.items():
+        if tokens & members:
+            out.add(basic)
+    return out
+
+
 def parse_query(text: str) -> dict:
     """Rules first (fast, free, works offline). Example: 'lal silk saree under 5000 shaadi ke liye'."""
     filters: dict = {"words": [], "colours": [], "max_price_paise": None, "min_price_paise": None, "size": None}
-    if m := PRICE_UNDER.search(text):
+    if m := (PRICE_UNDER.search(text) or PRICE_UNDER_AFTER.search(text) or PRICE_BUDGET.search(text)):
         filters["max_price_paise"] = _amount(m)
-    if m := PRICE_OVER.search(text):
+    if m := (PRICE_OVER.search(text) or PRICE_OVER_AFTER.search(text)):
         filters["min_price_paise"] = _amount(m)
     for word in re.findall(r"[a-zA-Z0-9]+", text.lower()):
         if word in SIZES:
             filters["size"] = word.upper()
-    for tok in tokenize(PRICE_UNDER.sub(" ", PRICE_OVER.sub(" ", text))):
+    cleaned = text
+    for pattern in (PRICE_UNDER, PRICE_UNDER_AFTER, PRICE_BUDGET, PRICE_OVER, PRICE_OVER_AFTER):
+        cleaned = pattern.sub(" ", cleaned)
+    for tok in tokenize(cleaned):
         if tok in COLOURS:
             filters["colours"].append(tok)
         elif tok.lower() not in SIZES:
@@ -237,7 +262,7 @@ def smart_search(db: Session, q: str, limit: int = 24, log_empty: bool = True) -
         if filters["size"] and not any((v.size or "").upper() == filters["size"] for v in variants[pid]):
             continue
         toks = set(tokens[pid])
-        if filters["colours"] and not (set(filters["colours"]) & toks):
+        if filters["colours"] and not (set(filters["colours"]) & colour_family(toks)):
             continue
         word_hits = sum(1 for w in filters["words"] if w in toks or any(t.startswith(w[:4]) for t in toks if len(w) >= 4))
         if filters["words"] and word_hits == 0:

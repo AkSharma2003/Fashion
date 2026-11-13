@@ -88,12 +88,14 @@ def checkout(db: Session, *, idempotency_key: str, items: list[dict], ship: dict
         product = db.get(Product, variant.product_id)
         if product is None or not product.is_active:
             raise BusinessError("NOT_FOUND", "An item in your cart is no longer available.", 404)
-        stock.reserve(db, variant.id, qty)          # raises OUT_OF_STOCK (T05)
+        # Hold it in the shop that can send it (main shop first); that shop also bills this line.
+        line_shop = stock.pick_shop_for(db, variant.id, qty)
+        stock.reserve(db, variant.id, qty, line_shop)          # raises OUT_OF_STOCK (T05)
         unit = stock.variant_price(variant, product)  # price from the server, never the browser
         line_total = unit * qty
         rate = rate_for_unit_price(unit, slabs, product.gst_rate_bp)
         split = split_inclusive(line_total, rate)
-        db.add(OrderItem(order_id=order.id, variant_id=variant.id, product_name=product.name, sku=variant.sku,
+        db.add(OrderItem(order_id=order.id, variant_id=variant.id, shop_id=line_shop, product_name=product.name, sku=variant.sku,
                          size=variant.size, color=variant.color, qty=qty, unit_price_paise=unit,
                          line_total_paise=line_total, gst_rate_bp=rate, tax_paise=split.tax_paise,
                          fall_pico_skipped=bool(line.get("fall_pico_skip", False))))
@@ -127,7 +129,7 @@ def confirm(db: Session, order: Order, *, actor_id: str | None, status: str = "P
     jobs = 0
     for item in items_of(db, order.id):
         stock.commit_reserved(db, item.variant_id, item.qty, reference_type="order", reference_id=str(order.id),
-                              actor_id=actor_id)
+                              actor_id=actor_id, shop_id=item.shop_id)
         variant = db.get(ProductVariant, item.variant_id)
         product = db.get(Product, variant.product_id) if variant else None
         if not item.fall_pico_skipped and fp.is_eligible(product, item.unit_price_paise, limit):
@@ -191,10 +193,10 @@ def cancel(db: Session, order: Order, *, actor_id: str | None, reason: str) -> O
     was_unpaid = order.status == "PENDING_PAYMENT"
     for item in items_of(db, order.id):
         if was_unpaid:
-            stock.release(db, item.variant_id, item.qty)
+            stock.release(db, item.variant_id, item.qty, item.shop_id)
         else:
             stock.move(db, item.variant_id, item.qty, "online_cancel", source="website", reference_type="order",
-                       reference_id=str(order.id), actor_id=actor_id)
+                       reference_id=str(order.id), actor_id=actor_id, shop_id=item.shop_id)
             fp.cancel_jobs_for_item(db, item.id, item.qty, actor_id)
     if not was_unpaid and order.payment_method == "ONLINE":
         _refund(db, order, order.total_paise - order.refunded_paise, return_id=None)
@@ -243,11 +245,15 @@ def create_shipment(db: Session, order_id: UUID, *, courier: str, awb: str | Non
     if order.status != "PACKED":
         raise BusinessError("INVALID_STATUS", "Pack the order before creating a shipment.", 422)
     from app.integrations import shiprocket
-    if not awb:
+    booked_here = not awb
+    if booked_here:
         awb, courier = shiprocket.create_shipment(db, order)
+    # Shiprocket's tracking page only knows parcels booked through Shiprocket; a typed AWB from another courier
+    # gets no link rather than a wrong one.
+    via_shiprocket = booked_here or courier.strip().lower() == "shiprocket"
     shipment = Shipment(order_id=order.id, courier=courier, awb=awb, created_by=actor_id,
                         cod_amount_paise=order.total_paise if order.payment_method == "COD" else 0,
-                        tracking_url=shiprocket.tracking_url(awb))
+                        tracking_url=shiprocket.tracking_url(awb) if via_shiprocket else None)
     db.add(shipment)
     _log(db, order, "SHIPPED", actor_id, f"{courier} {awb}")
     db.flush()
@@ -270,7 +276,7 @@ def create_return(db: Session, order_id: UUID, *, items: list[dict], reason: str
             raise BusinessError("VALIDATION_ERROR", "Return quantity is more than what was bought.", 400)
         item.returned_qty += qty
         stock.move(db, item.variant_id, qty, "online_return", source="website", reference_type="order_return",
-                   reference_id=str(order.id), actor_id=actor_id)
+                   reference_id=str(order.id), actor_id=actor_id, shop_id=item.shop_id)
         value = item.line_total_paise * qty // item.qty
         amount += value
         lines.append({"order_item_id": str(item.id), "qty": qty, "amount_paise": value})

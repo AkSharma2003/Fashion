@@ -18,11 +18,17 @@ type Trends = { trending: { product_id: string; name: string; category: string; 
 
 const TABS = [["buy", "What to buy"], ["forecast", "Forecast & trends"], ["describe", "Descriptions"], ["poster", "Poster maker"],
   ["requests", "Customer requests"], ["usage", "AI usage"]] as const;
+// Who works with each tab (Owner/Admin see all): buying for managers and accounts, content for managers and online staff.
+const TAB_ROLES: Record<string, string[]> = {
+  buy: ["Manager", "Accountant"], forecast: ["Manager", "Accountant"], requests: ["Manager", "Accountant"],
+  describe: ["Manager", "OnlineStaff"], poster: ["Manager", "OnlineStaff"], usage: [],
+};
 
 export default function AiToolsPage() {
   const { me } = useStaff();
-  const [tab, setTab] = useState<(typeof TABS)[number][0]>("buy");
-  const visible = TABS.filter(([k]) => k !== "usage" || hasRole(me));
+  const visible = TABS.filter(([k]) => hasRole(me, ...TAB_ROLES[k]));
+  const [picked, setTab] = useState<(typeof TABS)[number][0] | null>(null);
+  const tab = picked && visible.some(([k]) => k === picked) ? picked : visible[0]?.[0];
   return (
     <Page title="AI tools" crumb="Buying intelligence and content" actions={
       <div className="flex flex-wrap gap-2">{visible.map(([k, l]) => <Button key={k} variant={k === tab ? "primary" : "secondary"} onClick={() => setTab(k)}>{l}</Button>)}</div>}>

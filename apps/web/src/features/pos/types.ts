@@ -10,6 +10,8 @@ export type Snapshot = {
   series: { prefix: string; next_number: number };
   rules: { fall_pico_limit_paise: number; discount_limit_percent: Record<string, number>; pos_mode: string;
     shop_name: string; shop_gstin: string };
+  /** The shop this counter bills for (its name, GSTIN and address go on the bill). */
+  shop?: { id: string; code: string; name: string; gstin: string | null; address: string | null; phone: string | null };
 };
 export type CartLine = { item: PosItem; qty: number; discount_paise: number; fall_pico: boolean };
 export type Payment = { mode: "CASH" | "UPI" | "CARD" | "KHATA"; amount: number };

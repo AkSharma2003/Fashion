@@ -182,3 +182,84 @@ def delete_address(address_id: UUID, customer: Customer = Depends(required_custo
             rest[0].is_default = True
     db.commit()
     return ok({"deleted": str(address_id)})
+
+
+# ---------------------------------------------------------------------------
+# Wishlist and bag saved on the account, so they follow the customer and leave the browser on logout.
+# ---------------------------------------------------------------------------
+from app.modules.catalog.models import Product  # noqa: E402
+from app.modules.inventory.models import ProductVariant  # noqa: E402
+from app.modules.store.models import CustomerCartItem, CustomerWishlistItem  # noqa: E402
+
+MAX_LINES = 50
+
+
+def _shopping(db: Session, customer: Customer) -> dict:
+    from app.modules.store.router import _product_card, _variant_out
+    wishlist = []
+    for w in db.scalars(select(CustomerWishlistItem).where(CustomerWishlistItem.customer_id == customer.id)
+                        .order_by(CustomerWishlistItem.created_at)).all():
+        p = db.get(Product, w.product_id)
+        if p is not None and p.is_active:
+            wishlist.append(_product_card(db, p))
+    cart = []
+    for c in db.scalars(select(CustomerCartItem).where(CustomerCartItem.customer_id == customer.id)
+                        .order_by(CustomerCartItem.created_at)).all():
+        v = db.get(ProductVariant, c.variant_id)
+        p = db.get(Product, v.product_id) if v else None
+        if v is None or p is None or not v.is_active or not p.is_active:
+            continue
+        cart.append({"product": _product_card(db, p), "variant": _variant_out(db, v, p), "qty": c.qty})
+    return {"wishlist": wishlist, "cart": cart}
+
+
+class CartLineIn(BaseModel):
+    variant_id: UUID
+    qty: int = Field(ge=1, le=20)
+
+
+class ShoppingIn(BaseModel):
+    wishlist: list[UUID] | None = Field(default=None, max_length=MAX_LINES)     # product ids
+    cart: list[CartLineIn] | None = Field(default=None, max_length=MAX_LINES)
+
+
+def _replace(db: Session, customer: Customer, payload: ShoppingIn) -> None:
+    if payload.wishlist is not None:
+        db.query(CustomerWishlistItem).filter(CustomerWishlistItem.customer_id == customer.id).delete()
+        for pid in dict.fromkeys(payload.wishlist):
+            if db.get(Product, pid) is not None:
+                db.add(CustomerWishlistItem(customer_id=customer.id, product_id=pid))
+    if payload.cart is not None:
+        db.query(CustomerCartItem).filter(CustomerCartItem.customer_id == customer.id).delete()
+        merged: dict = {}
+        for line in payload.cart:
+            merged[line.variant_id] = max(merged.get(line.variant_id, 0), line.qty)
+        for vid, qty in merged.items():
+            if db.get(ProductVariant, vid) is not None:
+                db.add(CustomerCartItem(customer_id=customer.id, variant_id=vid, qty=qty))
+
+
+@router.get("/me/shopping")
+def my_shopping(customer: Customer = Depends(required_customer), db: Session = Depends(get_db)):
+    return ok(_shopping(db, customer))
+
+
+@router.put("/me/shopping")
+def save_shopping(payload: ShoppingIn, customer: Customer = Depends(required_customer), db: Session = Depends(get_db)):
+    """Replace the saved wishlist and/or bag with what the browser has now."""
+    _replace(db, customer, payload)
+    db.commit()
+    return ok({"saved": True})
+
+
+@router.post("/me/shopping/merge")
+def merge_shopping(payload: ShoppingIn, customer: Customer = Depends(required_customer), db: Session = Depends(get_db)):
+    """At sign-in: add what the customer picked as a guest to what the account already has."""
+    current_w = [w.product_id for w in db.scalars(select(CustomerWishlistItem)
+                                                   .where(CustomerWishlistItem.customer_id == customer.id))]
+    current_c = [CartLineIn(variant_id=c.variant_id, qty=c.qty) for c in db.scalars(
+        select(CustomerCartItem).where(CustomerCartItem.customer_id == customer.id))]
+    _replace(db, customer, ShoppingIn(wishlist=(current_w + list(payload.wishlist or []))[:MAX_LINES],
+                                      cart=(current_c + list(payload.cart or []))[:MAX_LINES]))
+    db.commit()
+    return ok(_shopping(db, customer))

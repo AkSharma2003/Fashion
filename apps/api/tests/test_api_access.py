@@ -101,3 +101,18 @@ def test_store_product_list_and_checkout(client, db):
     assert r["data"]["payment"]["razorpay_order_id"].startswith("order_test_")
     second = client.post("/api/v1/store/checkout", json={**body, "idempotency_key": "cart-other999"})
     assert second.status_code == 409 and second.json()["error"]["code"] == "OUT_OF_STOCK"
+
+
+def test_rate_limit_cannot_be_dodged_with_a_fake_forwarded_ip(client, db):
+    """Each request claims a different client IP in X-Forwarded-For; the proxy-added last entry is what counts."""
+    codes = [client.post("/api/v1/auth/sign-in", json={"login": "9000000000", "password": "x"},
+                         headers={"X-Forwarded-For": f"10.0.0.{i}, 203.0.113.9"}).status_code for i in range(12)]
+    assert codes.count(429) >= 1
+
+
+def test_accountant_reads_bills_but_cannot_return_them(client, db):
+    accountant = make_user(db, "Accountant")
+    assert client.get("/api/v1/pos/bills", headers=auth(accountant)).status_code == 200
+    r = client.post(f"/api/v1/pos/bills/{__import__('uuid').uuid4()}/return", headers=auth(accountant),
+                    json={"idempotency_key": "ret-acc-1", "items": [{"bill_item_id": str(__import__('uuid').uuid4()), "qty": 1}]})
+    assert r.status_code == 403

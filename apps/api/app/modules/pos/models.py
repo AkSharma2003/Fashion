@@ -12,7 +12,8 @@ class Counter(Base):
     __tablename__ = "counters"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    code: Mapped[str] = mapped_column(String(8), unique=True)          # C1
+    code: Mapped[str] = mapped_column(String(8), unique=True)          # SSS-C1 (older: C1)
+    shop_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("shops.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(64), default="Counter 1")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -39,6 +40,7 @@ class Bill(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     bill_no: Mapped[str] = mapped_column(String(48))
     counter_code: Mapped[str] = mapped_column(String(8))
+    shop_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("shops.id"), nullable=True, index=True)
     idempotency_key: Mapped[str] = mapped_column(String(128), unique=True)
     # pos | tally_import
     source: Mapped[str] = mapped_column(String(16), default="pos", index=True)

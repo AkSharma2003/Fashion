@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import write_audit
 from app.core.db import get_db
+from app.modules.shops.service import acting_shop, header_shop
 from app.core.errors import BusinessError, not_found, ok
 from app.core.sequences import formatted
 from app.modules.auth.dependencies import ACCOUNTANT, MANAGER, require_role, require_staff
@@ -80,11 +81,13 @@ def list_purchases(db: Session = Depends(get_db), user: StaffUser = Depends(buye
 
 
 def _create_purchase(db: Session, *, supplier: Supplier, supplier_bill_no: str, bill_date: date,
-                     lines: list[PurchaseLine], note: str | None, user: StaffUser) -> Purchase:
+                     lines: list[PurchaseLine], note: str | None, user: StaffUser, shop_id=None) -> Purchase:
     if db.scalar(select(Purchase).where(Purchase.supplier_id == supplier.id,
                                         Purchase.supplier_bill_no == supplier_bill_no)):
         raise BusinessError("DUPLICATE", "This supplier bill is already entered.", 409)
+    from app.modules.shops.service import main_shop_id
     purchase = Purchase(purchase_no=formatted(db, "purchase", "PUR-", 5), supplier_id=supplier.id,
+                        shop_id=shop_id or main_shop_id(db),
                         supplier_bill_no=supplier_bill_no, bill_date=bill_date, note=note, created_by=str(user.id))
     db.add(purchase)
     db.flush()
@@ -100,7 +103,7 @@ def _create_purchase(db: Session, *, supplier: Supplier, supplier_bill_no: str, 
                             line_total_paise=line_taxable + line_tax))
         variant.cost_paise = line.unit_cost_paise
         stock.move(db, variant.id, line.qty, "purchase", source="purchase", reference_type="purchase",
-                   reference_id=str(purchase.id), actor_id=str(user.id))
+                   reference_id=str(purchase.id), actor_id=str(user.id), shop_id=purchase.shop_id)
         taxable += line_taxable
         tax += line_tax
     purchase.taxable_paise, purchase.tax_paise, purchase.total_paise = taxable, tax, taxable + tax
@@ -116,12 +119,14 @@ def _create_purchase(db: Session, *, supplier: Supplier, supplier_bill_no: str, 
 
 
 @router.post("", status_code=201)
-def create_purchase(payload: PurchaseIn, db: Session = Depends(get_db), user: StaffUser = Depends(buyer)):
+def create_purchase(payload: PurchaseIn, db: Session = Depends(get_db), user: StaffUser = Depends(buyer),
+                    x_shop_id: str | None = Depends(header_shop)):
     supplier = db.get(Supplier, payload.supplier_id)
     if supplier is None:
         raise not_found("Supplier")
     purchase = _create_purchase(db, supplier=supplier, supplier_bill_no=payload.supplier_bill_no,
-                                bill_date=payload.bill_date, lines=payload.items, note=payload.note, user=user)
+                                bill_date=payload.bill_date, lines=payload.items, note=payload.note, user=user,
+                                shop_id=acting_shop(db, user, x_shop_id))
     db.commit()
     return ok({"id": str(purchase.id), "purchase_no": purchase.purchase_no, "total_paise": purchase.total_paise})
 
@@ -176,10 +181,10 @@ def _po_out(db: Session, po: PurchaseOrder) -> dict:
                        "qty": i.qty, "unit_cost_paise": i.unit_cost_paise, "received_qty": i.received_qty} for i in items]}
 
 
-def _make_po(db: Session, supplier_id: UUID, lines: list[POLine], expected_on, note, user) -> PurchaseOrder:
+def _make_po(db: Session, supplier_id: UUID, lines: list[POLine], expected_on, note, user, shop_id=None) -> PurchaseOrder:
     if db.get(Supplier, supplier_id) is None:
         raise not_found("Supplier")
-    po = PurchaseOrder(po_no=formatted(db, "purchase_order", "PO-", 5), supplier_id=supplier_id, status="DRAFT",
+    po = PurchaseOrder(po_no=formatted(db, "purchase_order", "PO-", 5), supplier_id=supplier_id, status="DRAFT", shop_id=shop_id,
                        expected_on=expected_on, note=note, created_by=str(user.id))
     db.add(po)
     db.flush()
@@ -210,21 +215,25 @@ def list_pos(db: Session = Depends(get_db), user: StaffUser = Depends(buyer)):
 
 
 @router.post("/orders", status_code=201)
-def create_po(payload: POIn, db: Session = Depends(get_db), user: StaffUser = Depends(buyer)):
-    po = _make_po(db, payload.supplier_id, payload.items, payload.expected_on, payload.note, user)
+def create_po(payload: POIn, db: Session = Depends(get_db), user: StaffUser = Depends(buyer),
+              x_shop_id: str | None = Depends(header_shop)):
+    po = _make_po(db, payload.supplier_id, payload.items, payload.expected_on, payload.note, user,
+                  shop_id=acting_shop(db, user, x_shop_id))
     db.commit()
     return ok(_po_out(db, po))
 
 
 @router.post("/orders/from-suggestions", status_code=201)
-def create_po_from_suggestions(payload: POFromSuggestions, db: Session = Depends(get_db), user: StaffUser = Depends(buyer)):
+def create_po_from_suggestions(payload: POFromSuggestions, db: Session = Depends(get_db), user: StaffUser = Depends(buyer),
+                               x_shop_id: str | None = Depends(header_shop)):
     from app.modules.assist.buying import what_to_buy
     wanted = {str(v) for v in payload.variant_ids} if payload.variant_ids else None
     lines = [POLine(variant_id=UUID(r["variant_id"]), qty=r["qty"], unit_cost_paise=r["unit_cost_paise"])
              for r in what_to_buy(db, with_summary=False)["reorder"] if wanted is None or r["variant_id"] in wanted]
     if not lines:
         raise BusinessError("VALIDATION_ERROR", "Nothing on the What-to-buy list right now.", 422)
-    po = _make_po(db, payload.supplier_id, lines, payload.expected_on, "Made from What-to-buy suggestions", user)
+    po = _make_po(db, payload.supplier_id, lines, payload.expected_on, "Made from What-to-buy suggestions", user,
+                  shop_id=acting_shop(db, user, x_shop_id))
     db.commit()
     return ok(_po_out(db, po))
 
@@ -264,7 +273,8 @@ def receive_po(po_id: UUID, payload: POReceive, db: Session = Depends(get_db), u
                                   unit_cost_paise=r.unit_cost_paise if r.unit_cost_paise is not None else item.unit_cost_paise,
                                   gst_rate_bp=r.gst_rate_bp))
     purchase = _create_purchase(db, supplier=db.get(Supplier, po.supplier_id), supplier_bill_no=payload.supplier_bill_no,
-                                bill_date=payload.bill_date, lines=lines, note=f"Against {po.po_no}", user=user)
+                                bill_date=payload.bill_date, lines=lines, note=f"Against {po.po_no}", user=user,
+                                shop_id=po.shop_id)
     po.status, po.purchase_id = "RECEIVED", purchase.id
     db.commit()
     return ok({"purchase_id": str(purchase.id), "purchase_no": purchase.purchase_no, "po": _po_out(db, po)})

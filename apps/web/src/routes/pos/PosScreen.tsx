@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { Alert, Badge, Button, Field, Input, Modal } from "../../components/ui";
 import { apiData, errorMessage, post } from "../../lib/api/client";
-import { getAccessToken } from "../../lib/auth/session";
+import { getAccessToken, staffHome } from "../../lib/auth/session";
 import { hasRole, StaffProvider, useStaff } from "../../lib/auth/staff";
 import { kvGet, kvSet } from "../../lib/offline/db";
 import { useT } from "../../lib/i18n";
@@ -10,11 +10,31 @@ import { formatDate, formatINR, rupeesToPaise } from "../../lib/money";
 import type { CartLine, KhataCustomer, Payment, PosItem } from "../../features/pos/types";
 import { usePosSync } from "../../features/pos/usePosSync";
 
-const COUNTER = "C1";
+const COUNTER_KEY = "wearverse.pos.counter";
+type CounterInfo = { code: string; name: string; shop: { id: string; code: string; name: string } };
+
+function readCounter(): CounterInfo | null {
+  try {
+    const raw = localStorage.getItem(COUNTER_KEY);
+    return raw ? (JSON.parse(raw) as CounterInfo) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCounter(c: CounterInfo | null): void {
+  try {
+    if (c) localStorage.setItem(COUNTER_KEY, JSON.stringify(c));
+    else localStorage.removeItem(COUNTER_KEY);
+  } catch {
+    // storage blocked: the counter is asked again next time
+  }
+}
 
 type Printed = { bill_no: string; lines: CartLine[]; payments: Payment[]; total: number; customer: KhataCustomer | null; at: string };
 
-function PosInner() {
+function PosInner({ counter, onChangeCounter }: { counter: CounterInfo; onChangeCounter: () => void }) {
+  const COUNTER = counter.code;
   const { me, loading } = useStaff();
   const { t } = useT();
   const sync = usePosSync(COUNTER);
@@ -53,7 +73,7 @@ function PosInner() {
   }, [cart.length]);
 
   if (!loading && !me && !getAccessToken()) return <Navigate to="/login?next=/pos" replace />;
-  if (me && !hasRole(me, "Cashier", "Manager")) return <p className="p-8">Only cashiers and managers can bill.</p>;
+  if (me && !hasRole(me, "Cashier", "Manager")) return <Navigate to={staffHome(me.role)} replace />;
 
   function addItem(item: PosItem) {
     const limit = rules?.fall_pico_limit_paise ?? 100000;
@@ -109,8 +129,11 @@ function PosInner() {
     <div className="flex min-h-screen flex-col bg-[#F7F7F7] text-[#111111] print:bg-white">
       <header className="flex flex-wrap items-center justify-between gap-3 bg-[#111111] px-4 py-3 text-white print:hidden">
         <div className="flex items-center gap-3">
-          <span className="text-lg font-semibold">WearVerse POS</span>
+          <span className="text-lg font-semibold">{sync.snapshot?.shop?.name ?? counter.shop.name}</span>
           <span className="text-sm text-gray-300">Counter {COUNTER} · {me?.full_name ?? "…"}</span>
+          {sync.queue.length === 0 && (
+            <button type="button" onClick={onChangeCounter} className="rounded px-2 py-0.5 text-xs text-gray-300 underline hover:text-white">Change counter</button>
+          )}
           {rules?.pos_mode === "parallel" && <Badge tone="warn">parallel run: bills saved for comparison only</Badge>}
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -215,8 +238,10 @@ function PosInner() {
           limits={rules?.discount_limit_percent ?? {}} queue={sync.queue} onClose={() => setPayOpen(false)} onDone={finish} />
       )}
       <QueueModal open={queueOpen} onClose={() => setQueueOpen(false)} sync={sync} />
-      <RegisterModal open={registerOpen} onClose={() => setRegisterOpen(false)} pending={sync.queue.length} />
-      {printed && <Receipt bill={printed} shop={rules?.shop_name ?? "WearVerse"} gstin={rules?.shop_gstin ?? ""} />}
+      <RegisterModal open={registerOpen} onClose={() => setRegisterOpen(false)} pending={sync.queue.length} counter={COUNTER} />
+      {printed && <Receipt bill={printed} shop={sync.snapshot?.shop?.name ?? rules?.shop_name ?? counter.shop.name}
+        gstin={sync.snapshot?.shop?.gstin ?? rules?.shop_gstin ?? ""} address={sync.snapshot?.shop?.address ?? ""}
+        phone={sync.snapshot?.shop?.phone ?? ""} />}
     </div>
   );
 }
@@ -328,7 +353,7 @@ function QueueModal({ open, onClose, sync }: { open: boolean; onClose: () => voi
   );
 }
 
-function RegisterModal({ open, onClose, pending }: { open: boolean; onClose: () => void; pending: number }) {
+function RegisterModal({ open, onClose, pending, counter: COUNTER }: { open: boolean; onClose: () => void; pending: number; counter: string }) {
   const [current, setCurrent] = useState<{ id: string; opening_cash_paise: number; expected_cash_paise: number; bills: number; by_mode: Record<string, number> } | null>(null);
   const [amount, setAmount] = useState("");
   const [msg, setMsg] = useState("");
@@ -365,10 +390,12 @@ function RegisterModal({ open, onClose, pending }: { open: boolean; onClose: () 
   );
 }
 
-function Receipt({ bill, shop, gstin }: { bill: Printed; shop: string; gstin: string }) {
+function Receipt({ bill, shop, gstin, address, phone }: { bill: Printed; shop: string; gstin: string; address: string; phone: string }) {
   return (
     <div className="hidden p-2 font-mono text-[12px] print:block">
       <p className="text-center text-base font-bold">{shop}</p>
+      {address && <p className="text-center">{address}</p>}
+      {phone && <p className="text-center">Ph {phone}</p>}
       {gstin && <p className="text-center">GSTIN {gstin}</p>}
       <p>Bill {bill.bill_no} · {formatDate(bill.at, true)}</p>
       {bill.customer && <p>Customer: {bill.customer.name}</p>}
@@ -384,10 +411,54 @@ function Receipt({ bill, shop, gstin }: { bill: Printed; shop: string; gstin: st
   );
 }
 
+/** Each device bills on one counter, and each counter belongs to one shop. Asked once, then remembered. */
+function CounterGate() {
+  const { me, loading } = useStaff();
+  const [counter, setCounter] = useState<CounterInfo | null>(readCounter);
+  const [choices, setChoices] = useState<CounterInfo[] | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!me) return;
+    apiData<CounterInfo[]>("/pos/counters").then((list) => {
+      setChoices(list);
+      setCounter((current) => {
+        const still = current && list.find((c) => c.code === current.code);
+        const pick = still ?? (list.length === 1 ? list[0] : null);
+        saveCounter(pick ?? null);
+        return pick ?? null;
+      });
+    }).catch((e) => setError(errorMessage(e)));   // offline: keep the counter saved on this device
+  }, [me]);
+
+  if (!loading && !me && !getAccessToken()) return <Navigate to="/login?next=/pos" replace />;
+  if (counter) return <PosInner counter={counter} onChangeCounter={() => { saveCounter(null); setCounter(null); }} />;
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#F7F7F7] p-4 text-[#111111]">
+      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6">
+        <h1 className="text-xl font-semibold">Which counter is this?</h1>
+        <p className="mt-1 text-sm text-gray-600">Bills from this device go to the shop of the counter you pick. You choose it once.</p>
+        {error && <p className="mt-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {!choices && !error && <p className="mt-4 text-sm text-gray-500">Loading counters…</p>}
+        <div className="mt-4 space-y-2">
+          {(choices ?? []).map((c) => (
+            <button key={c.code} type="button" onClick={() => { saveCounter(c); setCounter(c); }}
+              className="flex w-full items-center justify-between rounded-lg border border-gray-300 px-4 py-3 text-left hover:border-[#111111] hover:bg-gray-50">
+              <span><span className="block font-semibold">{c.shop.name}</span><span className="text-sm text-gray-500">{c.name}</span></span>
+              <span className="font-mono text-sm">{c.code}</span>
+            </button>
+          ))}
+          {choices && choices.length === 0 && <p className="text-sm text-gray-600">No counter is set up for your shop. Ask the owner to add one.</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PosScreen() {
   return (
     <StaffProvider>
-      <PosInner />
+      <CounterGate />
     </StaffProvider>
   );
 }

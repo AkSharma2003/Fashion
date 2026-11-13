@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Alert, Badge, Button, Card, Field, Input, Loading, Page, Select, Table } from "../../components/ui";
-import { apiData, patch, post } from "../../lib/api/client";
+import { Alert, Badge, Button, Card, Field, Input, Loading, Page } from "../../components/ui";
+import { apiData, patch } from "../../lib/api/client";
+import StaffLogins from "../../components/backoffice/StaffLogins";
+import ShopsCard from "../../components/backoffice/ShopsCard";
 import { useAction, useApi } from "../../lib/hooks/useApi";
 import { rupeesToPaise } from "../../lib/money";
 
 type Settings = { rules: Record<string, unknown>; integrations: Record<string, boolean | string> };
-type User = { id: string; full_name: string; phone_number: string; email: string | null; role: string | null; is_active: boolean; has_pin: boolean };
 
 const MONEY_RULES: [string, string][] = [
   ["fall_pico_limit_paise", "Fall-pico on sarees priced above ₹"],
@@ -26,11 +27,8 @@ const NUMBER_RULES: [string, string][] = [
 
 export default function SettingsPage() {
   const settings = useApi(() => apiData<Settings>("/settings"));
-  const users = useApi(() => apiData<User[]>("/auth/users"));
-  const roles = useApi(() => apiData<string[]>("/auth/roles"));
   const act = useAction();
   const [draft, setDraft] = useState<Record<string, string>>({});
-  const [nu, setNu] = useState({ full_name: "", phone_number: "", role: "Cashier", password: "", pin: "" });
 
   useEffect(() => {
     if (!settings.data) return;
@@ -74,27 +72,8 @@ export default function SettingsPage() {
           </Card>
         </>
       )}
-      <Card title="Staff logins">
-        <div className="mb-4 grid gap-2 sm:grid-cols-6">
-          <Input placeholder="Name" value={nu.full_name} onChange={(e) => setNu({ ...nu, full_name: e.target.value })} />
-          <Input placeholder="Phone" value={nu.phone_number} onChange={(e) => setNu({ ...nu, phone_number: e.target.value })} />
-          <Select value={nu.role} onChange={(e) => setNu({ ...nu, role: e.target.value })}>{(roles.data ?? []).map((r) => <option key={r}>{r}</option>)}</Select>
-          <Input type="password" placeholder="Password" value={nu.password} onChange={(e) => setNu({ ...nu, password: e.target.value })} />
-          <Input type="password" inputMode="numeric" placeholder="PIN (managers)" value={nu.pin} onChange={(e) => setNu({ ...nu, pin: e.target.value })} />
-          <Button disabled={act.busy} onClick={async () => {
-            await act.run(() => post("/auth/users", { ...nu, password: nu.password || null, pin: nu.pin || null }), "Login created.");
-            setNu({ full_name: "", phone_number: "", role: "Cashier", password: "", pin: "" }); void users.reload(); }}>Add</Button>
-        </div>
-        <Table rows={users.data ?? []} rowKey={(u) => u.id} columns={[
-          { key: "n", label: "Name", render: (u) => <div><p className="font-medium">{u.full_name}</p><p className="text-xs text-gray-500">{u.phone_number}</p></div> },
-          { key: "r", label: "Role", render: (u) => <Select className="!min-h-9 w-36" value={u.role ?? ""} onChange={async (e) => {
-            await act.run(() => patch(`/auth/users/${u.id}`, { role: e.target.value }), "Role changed."); void users.reload(); }}>
-            {(roles.data ?? []).map((r) => <option key={r}>{r}</option>)}</Select> },
-          { key: "p", label: "PIN", render: (u) => u.has_pin ? <Badge tone="good">set</Badge> : <Badge tone="info">none</Badge> },
-          { key: "a", label: "", render: (u) => <Button className="!min-h-9" variant="secondary" onClick={async () => {
-            await act.run(() => patch(`/auth/users/${u.id}`, { is_active: !u.is_active })); void users.reload(); }}>{u.is_active ? "Switch off" : "Switch on"}</Button> },
-        ]} />
-      </Card>
+      <ShopsCard />
+      <StaffLogins />
     </Page>
   );
 }

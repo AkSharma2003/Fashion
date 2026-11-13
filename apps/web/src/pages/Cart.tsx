@@ -1,7 +1,6 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { Minus, Plus, X } from "lucide-react";
 import clothingFallback from "../assets/images/clothing-fallback.svg";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -13,205 +12,125 @@ import {
   type CartItem,
 } from "../lib/cart";
 
+const rupees = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
+
+/** Bag: compact item rows and a price summary (MRP, discount, total). */
 export default function Cart() {
   const [items, setItems] = useState<CartItem[]>(getCart);
 
   useEffect(() => {
     const refreshCart = () => setItems(getCart());
-
     window.addEventListener(cartUpdatedEventName(), refreshCart);
     window.addEventListener("storage", refreshCart);
-
     return () => {
       window.removeEventListener(cartUpdatedEventName(), refreshCart);
       window.removeEventListener("storage", refreshCart);
     };
   }, []);
 
-  const total = items.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
-    0,
-  );
-
-  const itemCount = items.reduce(
-    (count, item) => count + item.quantity,
-    0,
-  );
+  const total = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const totalMrp = items.reduce((sum, item) => sum + Math.max(item.product.mrp ?? 0, item.product.price) * item.quantity, 0);
+  const itemCount = items.reduce((count, item) => count + item.quantity, 0);
+  const needSize = items.some((i) => !i.variantId);
 
   return (
     <>
       <Header />
-
-      <main className="min-h-screen bg-linear-to-br from-background to-Alt_background px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+      <main className="min-h-screen bg-background px-3 py-6 sm:px-6 sm:py-10 lg:px-8">
         <section className="mx-auto max-w-5xl">
-          <div className="mb-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">
-              Your selection
-            </p>
-            <h1 className="mt-2 font-primaryFont text-3xl font-semibold text-main_text sm:text-4xl">
-              Shopping cart
-            </h1>
-          </div>
+          <h1 className="sr-only">Shopping bag</h1>
 
           {items.length === 0 ? (
-            <div className="rounded-2xl border border-divider bg-white px-6 py-12 text-center shadow-sm">
-              <p className="font-primaryFont text-xl font-semibold text-main_text">
-                Your cart is empty
-              </p>
-              <p className="mt-2 text-sm text-text">
-                Explore the collection and add a style you love.
-              </p>
-              <Link
-                to="/"
-                className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 py-2.5 font-semibold text-white transition hover:bg-primary-dark"
-              >
-                Explore designs
+            <div className="mx-auto max-w-md bg-white px-6 py-12 text-center">
+              <p className="text-lg font-semibold text-main_text">Your bag is empty</p>
+              <p className="mt-1 text-sm text-muted">Add a style you love and it will show up here.</p>
+              <Link to="/" className="mt-6 inline-flex min-h-11 items-center justify-center rounded bg-primary px-6 text-sm font-semibold uppercase tracking-wide text-white hover:bg-primary-dark">
+                Continue shopping
               </Link>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-[1fr_18rem] md:items-start">
-              <div className="space-y-4">
-                {items.map(({ product, quantity, variantId, size, color, sku, stockQuantity }) => (
-                  <article
-                    key={`${product.id ?? product.name}::${variantId ?? ""}::${size ?? ""}::${color ?? ""}`}
-                    className="flex gap-4 rounded-xl border border-divider bg-white p-3 shadow-sm sm:gap-5 sm:p-4"
-                  >
-                    <img
-                      src={product.image}
-                      alt={product.imageAlt}
-                      referrerPolicy="no-referrer"
-                      onError={(event) => {
-                        event.currentTarget.onerror = null;
-                        event.currentTarget.src = clothingFallback;
-                      }}
-                      className="h-28 w-24 shrink-0 rounded-lg bg-Alt_background object-cover sm:h-36 sm:w-28"
-                    />
-
-                    <div className="flex min-w-0 flex-1 flex-col">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <h2 className="font-primaryFont text-base font-semibold text-main_text sm:text-lg">
-                            {product.name}
-                          </h2>
-
-                          <p className="mt-1 line-clamp-2 text-xs leading-5 text-text sm:text-sm">
-                            {product.description}
-                          </p>
-
-                          {(size || color || sku) && (
-                            <div className="mt-2 space-y-1 text-xs text-text sm:text-sm">
-                              {size && (
-                                <p>
-                                  <span className="font-medium text-main_text">Size:</span>{" "}
-                                  {size}
-                                </p>
-                              )}
-
-                              {color && (
-                                <p>
-                                  <span className="font-medium text-main_text">Color:</span>{" "}
-                                  {color}
-                                </p>
-                              )}
-
-                              {sku && (
-                                <p>
-                                  <span className="font-medium text-main_text">SKU:</span>{" "}
-                                  {sku}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => removeFromCart(product.name, variantId)}
-                          aria-label={`Remove ${product.name}${size ? ` size ${size}` : ""}${color ? ` color ${color}` : ""} from cart`}
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-red-50 hover:text-sale"
-                        >
-                          <Trash2 size={18} aria-hidden="true" />
-                        </button>
-                      </div>
-
-                      <div className="mt-auto flex flex-wrap items-end justify-between gap-3 pt-3">
-                        <div className="inline-flex items-center rounded-lg border border-divider">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateCartQuantity(
-                                product.name,
-                                quantity - 1,
-                                variantId,
-                              )
-                            }
-                            aria-label={`Decrease ${product.name} quantity`}
-                            className="flex h-9 w-9 items-center justify-center text-text transition hover:bg-background"
-                          >
-                            <Minus size={15} aria-hidden="true" />
-                          </button>
-
-                          <span className="min-w-8 text-center text-sm font-medium text-main_text">
-                            {quantity}
+            <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_20rem] md:items-start">
+              <div className="space-y-3">
+                {items.map(({ product, quantity, variantId, size, color, stockQuantity }) => {
+                  const mrp = product.mrp && product.mrp > product.price ? product.mrp : 0;
+                  return (
+                    <article key={`${product.id ?? product.name}::${variantId ?? ""}::${size ?? ""}::${color ?? ""}`}
+                      className="relative flex gap-3 border border-divider bg-white p-3">
+                      <Link to={product.id ? `/product/${product.id}` : "#"} className="shrink-0">
+                        <img src={product.image} alt={product.imageAlt} referrerPolicy="no-referrer"
+                          onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = clothingFallback; }}
+                          className="aspect-[3/4] w-20 bg-Alt_background object-cover object-top sm:w-24" />
+                      </Link>
+                      <div className="min-w-0 flex-1 pr-7">
+                        <h2 className="truncate text-sm font-semibold text-main_text">{product.name}</h2>
+                        <p className="truncate text-xs text-muted">{product.description}</p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-main_text">
+                          {size && <span className="rounded bg-Alt_background px-2 py-1">Size: {size}</span>}
+                          {color && <span className="rounded bg-Alt_background px-2 py-1">{color}</span>}
+                          <span className="inline-flex items-center rounded bg-Alt_background">
+                            <button type="button" onClick={() => updateCartQuantity(product.name, quantity - 1, variantId)}
+                              aria-label={`Decrease ${product.name} quantity`} className="flex h-6 w-6 items-center justify-center">
+                              <Minus size={12} aria-hidden="true" />
+                            </button>
+                            <span className="min-w-8 text-center">Qty: {quantity}</span>
+                            <button type="button" disabled={stockQuantity !== undefined && quantity >= stockQuantity}
+                              onClick={() => updateCartQuantity(product.name, quantity + 1, variantId)}
+                              aria-label={`Increase ${product.name} quantity`} className="flex h-6 w-6 items-center justify-center disabled:opacity-30">
+                              <Plus size={12} aria-hidden="true" />
+                            </button>
                           </span>
-
-                          <button
-                            type="button"
-                            disabled={
-                              stockQuantity !== undefined &&
-                              quantity >= stockQuantity
-                            }
-                            onClick={() =>
-                              updateCartQuantity(
-                                product.name,
-                                quantity + 1,
-                                variantId,
-                              )
-                            }
-                            aria-label={`Increase ${product.name} quantity`}
-                            className="flex h-9 w-9 items-center justify-center text-text transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            <Plus size={15} aria-hidden="true" />
-                          </button>
                         </div>
-
-                        <p className="font-semibold text-primary">
-                          &#8377;
-                          {(product.price * quantity).toLocaleString("en-IN")}
+                        <p className="mt-2 flex flex-wrap items-baseline gap-x-1.5 text-sm">
+                          <span className="font-semibold text-main_text">{rupees(product.price * quantity)}</span>
+                          {mrp > 0 && (
+                            <>
+                              <span className="text-xs text-muted line-through">{rupees(mrp * quantity)}</span>
+                              <span className="text-xs font-semibold text-[#E8762C]">{Math.round((1 - product.price / mrp) * 100)}% OFF</span>
+                            </>
+                          )}
                         </p>
+                        {!variantId && (
+                          <p className="mt-1 text-xs font-semibold text-sale">
+                            Size not chosen. <Link className="underline" to={product.id ? `/product/${product.id}` : "/"}>Choose a size</Link>
+                          </p>
+                        )}
                       </div>
-                    </div>
-                  </article>
-                ))}
+                      <button type="button" onClick={() => removeFromCart(product.name, variantId)}
+                        aria-label={`Remove ${product.name}${size ? ` size ${size}` : ""}${color ? ` ${color}` : ""} from bag`}
+                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-muted hover:bg-Alt_background hover:text-main_text">
+                        <X size={16} aria-hidden="true" />
+                      </button>
+                    </article>
+                  );
+                })}
               </div>
 
-              <aside className="rounded-xl border border-divider bg-white p-5 shadow-sm">
-                <h2 className="font-primaryFont text-xl font-semibold text-main_text">
-                  Order summary
-                </h2>
-
-                <div className="mt-5 flex justify-between border-b border-divider pb-4 text-sm text-text">
-                  <span>Subtotal ({itemCount} items)</span>
-                  <span>&#8377;{total.toLocaleString("en-IN")}</span>
+              <aside className="border border-divider bg-white p-4 md:sticky md:top-24">
+                <h2 className="text-xs font-bold uppercase tracking-wide text-muted">Price details ({itemCount} {itemCount === 1 ? "item" : "items"})</h2>
+                <dl className="mt-3 space-y-2 text-sm text-main_text">
+                  <div className="flex justify-between"><dt>Total MRP</dt><dd>{rupees(totalMrp)}</dd></div>
+                  {totalMrp > total && (
+                    <div className="flex justify-between"><dt>Discount on MRP</dt><dd className="text-[#03A685]">−{rupees(totalMrp - total)}</dd></div>
+                  )}
+                  <div className="flex justify-between"><dt>Shipping</dt><dd className="text-muted">Calculated at checkout</dd></div>
+                </dl>
+                <div className="mt-3 flex justify-between border-t border-divider pt-3 font-bold text-main_text">
+                  <span>Total amount</span><span>{rupees(total)}</span>
                 </div>
-
-                <div className="flex justify-between py-4 font-semibold text-main_text">
-                  <span>Total</span>
-                  <span>&#8377;{total.toLocaleString("en-IN")}</span>
-                </div>
-
-                <Link
-                  to="/checkout"
-                  className="flex min-h-12 w-full items-center justify-center rounded-lg bg-primary px-4 py-3 font-semibold text-white hover:opacity-90"
-                >
-                  Checkout
+                {totalMrp > total && (
+                  <p className="mt-2 text-xs font-semibold text-[#03A685]">You save {rupees(totalMrp - total)} on this order</p>
+                )}
+                <Link to={needSize ? "#" : "/checkout"} aria-disabled={needSize}
+                  onClick={(e) => { if (needSize) e.preventDefault(); }}
+                  className={`mt-4 flex min-h-12 w-full items-center justify-center rounded bg-primary px-4 text-sm font-semibold uppercase tracking-wide text-white hover:bg-primary-dark ${needSize ? "cursor-not-allowed opacity-50" : ""}`}>
+                  Place order
                 </Link>
+                {needSize && <p className="mt-2 text-xs text-sale">Choose a size for every item first.</p>}
               </aside>
             </div>
           )}
         </section>
       </main>
-
       <Footer />
     </>
   );

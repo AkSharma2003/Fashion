@@ -41,6 +41,8 @@ def calculate(*, pay_type: str, monthly_salary_paise: int, daily_rate_paise: int
               present: int, half: int, paid_leave: int, weekly_off: int, weekly_off_paid: bool,
               incentive_paise: int = 0, overtime_paise: int = 0, advance_recovery_paise: int = 0,
               other_deductions_paise: int = 0) -> LineCalc:
+    incentive_paise, overtime_paise = incentive_paise or 0, overtime_paise or 0
+    advance_recovery_paise, other_deductions_paise = advance_recovery_paise or 0, other_deductions_paise or 0
     half_days = present * 2 + half + paid_leave * 2 + (weekly_off * 2 if weekly_off_paid else 0)
     if pay_type == "DAILY":
         earned = _div_round(daily_rate_paise * half_days, 2)
@@ -117,7 +119,8 @@ def build_run(db: Session, year: int, month: int, actor_id: str | None) -> Salar
         counts = attendance_counts(db, emp.id, year, month)
         if line is None:
             line = SalaryLine(run_id=run.id, employee_id=emp.id, days_in_month=days_in_month,
-                              advance_recovery_paise=planned_recovery(db, emp.id))
+                              advance_recovery_paise=planned_recovery(db, emp.id),
+                              incentive_paise=0, overtime_paise=0, other_deductions_paise=0)
             db.add(line)
         line.days_in_month = days_in_month
         line.present_days, line.half_days = counts["P"], counts["H"]

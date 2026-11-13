@@ -38,7 +38,7 @@ Requirement IDs (`FR-KHT-02`, `T06`) refer to the SRS in [../srs/srs.pdf](../srs
 
 | Component | Folder | Runs as | Notes |
 |---|---|---|---|
-| API | `apps/api` | `uvicorn app.main:app` (port 8000) | 23 modules, 178 endpoints under `/api/v1`, OpenAPI at `/docs` |
+| API | `apps/api` | `uvicorn app.main:app` (port 8000) | 23 modules, 192 endpoints under `/api/v1`, OpenAPI at `/docs` |
 | Web | `apps/web` | Vite dev server / static build behind Caddy | Website, back office, POS, Pay Now; English only |
 | Worker | `apps/worker` | `celery -A app.celery_app worker -B` | Only calls `/api/v1/internal/*`; holds no business logic |
 | AI service | `apps/ai-service` | `uvicorn app.main:app --port 8001` | Calls Claude; the API works without it |

@@ -223,3 +223,40 @@ def test_public_ai_endpoints(client, db):
     assert client.get("/api/v1/ai/recommendations?context=home").json()["success"]
     r = client.post("/api/v1/ai/chat", json={"text": "return policy?"}).json()["data"]
     assert "return" in r["reply"].lower() and r["notice"].startswith("You are chatting with")
+
+
+# ---- chatbot answers like a shop assistant (AI off) --------------------------------------
+
+def _ask(db, text):
+    return chat.answer(db, session_id=None, text=text, customer=None)
+
+
+def test_chat_small_talk_and_help(db):
+    assert "Welcome" in _ask(db, "hi")["reply"]
+    assert "welcome" in _ask(db, "thank you")["reply"].lower()
+    assert "order number" in _ask(db, "mera order kahan hai")["reply"]
+    assert "Size help" in _ask(db, "size kaise choose karu")["reply"]
+    assert _ask(db, "fall pico free hai?")["source"] != "policy"          # "free" alone is not a discount request
+
+
+def test_chat_answers_price_and_availability_directly(db):
+    lehenga = make_variant(db, name="Girls Lehenga Choli", price=179900, qty=3, category="Kids")
+    make_variant(db, name="Boys Kurta Pajama", price=119900, qty=3, category="Kids")
+    r = _ask(db, "kids lehenga price")
+    assert r["reply"].startswith("Girls Lehenga Choli is ₹1,799") and r["product_ids"] == [str(lehenga.product_id)]
+    assert _ask(db, "lehenga hai kya")["reply"].startswith("Yes")
+
+
+def test_chat_understands_hinglish_budget(db):
+    make_variant(db, name="Cotton Saree", price=129900, qty=2)
+    make_variant(db, name="Silk Saree", price=649900, qty=2)
+    r = _ask(db, "5000 ke andar saree")
+    assert "Cotton Saree" in r["reply"] and "Silk Saree" not in r["reply"]
+
+
+def test_chat_suggests_other_colours_and_logs_real_missing_items(db):
+    make_variant(db, name="Anarkali Suit", price=299900, qty=2, category="Suits")   # colour Red
+    r = _ask(db, "green anarkali suit hai kya")
+    assert "No green" in r["reply"] and "Anarkali Suit" in r["reply"]
+    _ask(db, "jeans hai kya")
+    assert db.scalar(select(MissingProductRequest)).text == "jeans hai kya"
