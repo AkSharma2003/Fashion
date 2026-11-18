@@ -17,6 +17,9 @@ def send_text(phone: str, text: str) -> str:
     if phone.startswith("+91"):
         phone = phone[3:]
     if not settings.twofactor_api_key or settings.customer_otp_test_mode:
+        if settings.is_production:
+            # Never report a message as sent when nothing was delivered.
+            raise SmsError("SMS provider is not configured")
         log.info("SMS (log provider) to %s***: %s", phone[:4], text[:80])
         return "sms-log"
     url = f"https://2factor.in/API/R1/"

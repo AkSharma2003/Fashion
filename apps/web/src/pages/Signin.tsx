@@ -9,7 +9,7 @@ import { clearSession, getCustomerToken, setCustomerToken } from "../lib/auth/se
 import { clearLocalShopping, mergeOnSignIn } from "../lib/shoppingSync";
 import { publishProfile } from "../lib/customer";
 
-/** Website registration: details → 6-digit code sent to the e-mail (and SMS) → account created → signed in. */
+/** Website registration: details → 6-digit code sent to the e-mail → account created → signed in. */
 
 const inputClass = "min-h-12 w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20";
 const REGISTER = "/customers/customers/website/register";

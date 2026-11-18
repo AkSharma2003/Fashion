@@ -2,16 +2,19 @@ from app.core.config import settings
 
 import aiosmtplib
 from email.message import EmailMessage
+from email.utils import formataddr
 
 
 async def send_otp_email(
     email: str,
     otp: str,
 ) -> bool:
-    """Send a test OTP email to the local Mailpit inbox."""
+    """Send an OTP email using the configured SMTP server."""
 
     message = EmailMessage()
-    message["From"] = f"{settings.store_name} <no-reply@wearverse.local>"
+    # Gmail and most providers only accept the signed-in account as sender, so fall back to it.
+    sender = settings.smtp_from_email or settings.smtp_username
+    message["From"] = formataddr((settings.store_name, sender))
     message["To"] = email
     message["Subject"] = f"Your {settings.store_name} verification code"
 
@@ -23,9 +26,12 @@ async def send_otp_email(
 
     await aiosmtplib.send(
         message,
-        hostname="127.0.0.1",
-        port=1025,
-        start_tls=False,
+        hostname=settings.smtp_host,
+        port=settings.smtp_port,
+        username=settings.smtp_username or None,
+        password=settings.smtp_password or None,
+        use_tls=settings.smtp_use_tls,
+        start_tls=settings.smtp_start_tls,
     )
 
     return True

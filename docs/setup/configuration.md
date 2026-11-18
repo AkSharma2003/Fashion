@@ -24,7 +24,10 @@ Two kinds of configuration:
 | `API_INTERNAL_URL` | worker | Where the worker finds the API, e.g. `http://api:8000/api/v1/internal` |
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | live payments | Empty = simulated payments (local only) |
 | `WHATSAPP_PROVIDER_URL`, `WHATSAPP_API_KEY`, `WHATSAPP_WEBHOOK_SECRET` | live WhatsApp | Empty = messages are only logged |
-| `TWOFACTOR_API_KEY` | SMS / OTP | 2factor.in |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD` | email / OTP | SMTP server credentials; production must use a real email provider |
+| `SMTP_USE_TLS`, `SMTP_START_TLS`, `SMTP_FROM_EMAIL` | email / OTP | TLS mode and verified sender address; local Docker uses Mailpit |
+| `TWOFACTOR_API_KEY` | SMS | 2factor.in (WhatsApp fallback; OTP SMS only when `OTP_SEND_SMS=true`) |
+| `OTP_SEND_SMS` | OTP | `false` (default) = OTP codes go by e-mail only; `true` = also by SMS |
 | `CUSTOMER_OTP_TEST_MODE` | local | `true` = SMS is only logged, not sent (OTP still goes by e-mail); must be `false` in production |
 | `GOOGLE_CLIENT_ID` | Google sign-in | OAuth Web client id (Google Cloud console). Empty = Google button shows "not set up" |
 | `SHIPROCKET_EMAIL`, `SHIPROCKET_PASSWORD` | courier | Empty = staff type AWB numbers |

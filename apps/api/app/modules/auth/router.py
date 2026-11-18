@@ -157,7 +157,7 @@ async def send_otp(
         ) from exc
 
     return OTPSendResponse(
-        message="If delivery is successful, your OTP has been sent to your registered email and phone."
+        message="If delivery is successful, your OTP has been sent to your registered email."
     )
 
 

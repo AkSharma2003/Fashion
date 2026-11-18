@@ -55,13 +55,13 @@ class WebsiteRegistrationService:
         store_otp(normalized_email, otp)
 
         try:
-            # Attempt both deliveries; do not return the OTP to the caller.
+            # The OTP goes by e-mail; SMS only when OTP_SEND_SMS is on. Never return the OTP to the caller.
             email_sent = await send_otp_email(normalized_email, otp)
 
-            if settings.environment == "local" and settings.customer_otp_test_mode:
-            # Local testing only: SMS is simulated, not delivered.
-                sms_sent = True
-            else:
+            sms_sent = True
+            if settings.otp_send_sms and not (
+                settings.environment == "local" and settings.customer_otp_test_mode
+            ):
                 sms_sent = await send_otp_sms(normalized_phone, otp)
 
             if not email_sent or not sms_sent:

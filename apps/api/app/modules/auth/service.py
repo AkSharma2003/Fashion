@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import (
     verify_password,
     create_access_token,
@@ -168,10 +169,13 @@ class AuthService:
                 staff_user.email,
                 otp,
             )
-            sms_sent = await send_otp_sms(
-                phone_number,
-                otp,
-            )
+            # The OTP goes to the staff member's e-mail; SMS only when OTP_SEND_SMS is on.
+            sms_sent = True
+            if settings.otp_send_sms:
+                sms_sent = await send_otp_sms(
+                    phone_number,
+                    otp,
+                )
 
             if not email_sent or not sms_sent:
                 raise RuntimeError("OTP_DELIVERY_FAILED")

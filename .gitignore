@@ -57,3 +57,13 @@ temp/
 # Secrets and certificates
 *.pem
 *.key
+
+# LaTeX build files (keep the .tex and .pdf)
+*.aux
+*.out
+*.toc
+*.synctex.gz
+
+# Local tool state
+.pytest_cache/
+*.session.sql

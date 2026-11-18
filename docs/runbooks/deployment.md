@@ -5,44 +5,46 @@ Tally bridge run on a separate Windows server (see [tally-bridge.md](tally-bridg
 
 ## What runs
 
-`docker compose --profile app up -d --build` starts:
+Production uses [`docker-compose.prod.yml`](../../docker-compose.prod.yml) (the plain `docker-compose.yml` is for
+local development). It starts:
 
 | Service | Image | Port | Notes |
 |---|---|---|---|
-| `db` | `pgvector/pgvector:pg16` | 5432 | Data in volume `pgdata` |
-| `redis` | `redis:7-alpine` | 6379 | Broker and rate limits; no data that matters |
-| `mailpit` | `axllent/mailpit` | 8025 | Test e-mail only — do not use in production |
-| `api` | `apps/api` | 8000 | Runs `alembic upgrade head` on every start, then uvicorn |
-| `worker` | `apps/worker` | — | Celery worker + beat |
-| `ai` | `apps/ai-service` | 8001 | Needs `ANTHROPIC_API_KEY` for AI wording |
+| `db` | `pgvector/pgvector:pg16` | internal | Data in volume `pgdata`; password from `POSTGRES_PASSWORD` |
+| `redis` | `redis:7-alpine` | internal | Broker and rate limits; password from `REDIS_PASSWORD` |
+| `api` | `apps/api` | internal | Runs `alembic upgrade head` on every start, then uvicorn (`API_WORKERS`, default 2) |
+| `worker` | `apps/worker` | — | Celery worker + beat — keep exactly one |
+| `ai` | `apps/ai-service` | internal | Needs `ANTHROPIC_API_KEY` for AI wording |
 | `web` | `caddy:2-alpine` | 80, 443 | Serves `apps/web/dist`, proxies `/api`, HTTPS certificate, SEO pages for bots |
 
 ## First deployment
 
 1. DNS: point `WEARVERSE_DOMAIN` (e.g. `shop.example.in`) at the server. Open ports 80 and 443 only.
-   **Block 5432, 6379, 8000, 8001 and 8025 from the internet** (cloud firewall); compose publishes them for
-   local use.
+   The production compose file publishes only 80/443; keep the cloud firewall closed for everything else.
 2. Copy the repository to the server and create `apps/api/.env` from `.env.example`:
    - `ENVIRONMENT=production`, `PUBLIC_WEB_URL=https://<domain>`, `CORS_ORIGINS=https://<domain>`
    - new random `JWT_SECRET`, `PAYLINK_SECRET`, `TALLY_AGENT_API_KEY`, `INTERNAL_API_KEY`
      (`openssl rand -hex 32` each)
    - live Razorpay, WhatsApp provider, 2factor, Shiprocket, R2 and Anthropic keys
    - `CUSTOMER_OTP_TEST_MODE=false`
-   - change the database password in `docker-compose.yml` and `DATABASE_URL` (the default `fashionos`
-     password is for local use)
+   - real SMTP: `SMTP_HOST`, `SMTP_PORT=587`, `SMTP_START_TLS=true`, user/password, `SMTP_FROM_EMAIL` on your domain
+   - `POSTGRES_PASSWORD`, `REDIS_PASSWORD` (`openssl rand -hex 32`), `WEARVERSE_DOMAIN=<domain>`
+
+   With `ENVIRONMENT=production` the API **refuses to start** and lists every missing or unsafe value
+   (`docker compose -f docker-compose.prod.yml logs api`). Fix them all before going on.
 3. Build the web app and start:
    ```bash
    pnpm install && pnpm build:web
-   WEARVERSE_DOMAIN=shop.example.in docker compose --profile app up -d --build
+   docker compose -f docker-compose.prod.yml --env-file apps/api/.env up -d --build
    ```
 4. Create the owner login and counter:
    ```bash
-   docker compose exec api python -m scripts.seed --phone <owner mobile> --password '<strong password>' --pin <4-6 digits>
+   docker compose -f docker-compose.prod.yml --env-file apps/api/.env exec api python -m scripts.seed --phone <owner mobile> --password '<strong password>' --pin <4-6 digits>
    ```
    (no `--demo` in production).
 5. In Razorpay, set the webhook URL `https://<domain>/api/v1/webhooks/razorpay` with the same secret as
    `RAZORPAY_WEBHOOK_SECRET`. In the WhatsApp provider, set `https://<domain>/api/v1/webhooks/whatsapp`.
-6. Check: on the server `curl localhost:8000/health` → `{"status":"ok",...}`; then open the website, log in to
+6. Check: `docker compose -f docker-compose.prod.yml --env-file apps/api/.env ps` shows `api` as `healthy`; then open the website, log in to
    the back office, and open `/pos` once on the counter PC.
 7. Fill Settings (shop GSTIN, size charts, FAQ, Shiprocket pickup name, AI budget) and the Tally mappings.
 8. Install the Tally bridge on the Tally server.
@@ -52,7 +54,8 @@ Tally bridge run on a separate Windows server (see [tally-bridge.md](tally-bridg
 ```bash
 git pull
 pnpm install && pnpm build:web
-docker compose --profile app up -d --build      # api applies new migrations on start
+export COMPOSE_FILE=docker-compose.prod.yml COMPOSE_ENV_FILES=apps/api/.env
+docker compose up -d --build                    # api applies new migrations on start
 docker compose logs -f api worker               # watch for errors
 ```
 

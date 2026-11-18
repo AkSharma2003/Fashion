@@ -83,6 +83,7 @@ def test_register_sends_otp_and_does_not_return_it(
         ) as settings,
     ):
         settings.environment = "production"
+        settings.otp_send_sms = True
 
         result = asyncio.run(
             service.register(**registration_data)
@@ -146,6 +147,7 @@ def test_register_clears_pending_data_when_email_delivery_fails(
         ) as settings,
     ):
         settings.environment = "production"
+        settings.otp_send_sms = False
 
         with pytest.raises(
             RuntimeError,
@@ -245,3 +247,38 @@ def test_verify_creates_verified_customer(
 
     clear_otp.assert_called_once_with(registration_data["email"])
     clear_pending.assert_called_once_with(registration_data["email"])
+
+# Default: the OTP goes by e-mail only, no SMS
+def test_register_sends_otp_by_email_only_when_sms_is_off(
+    service,
+    registration_data,
+):
+    service.customer_repo.get_customer_by_email.return_value = None
+    service.customer_repo.get_customer_by_phone_number.return_value = None
+
+    with (
+        patch(
+            "app.modules.customers.website_registration_service.generate_otp",
+            return_value="123456",
+        ),
+        patch("app.modules.customers.website_registration_service.store_pending_registration"),
+        patch("app.modules.customers.website_registration_service.store_otp"),
+        patch(
+            "app.modules.customers.website_registration_service.send_otp_email",
+            new_callable=AsyncMock,
+            return_value=True,
+        ) as send_email,
+        patch(
+            "app.modules.customers.website_registration_service.send_otp_sms",
+            new_callable=AsyncMock,
+        ) as send_sms,
+        patch("app.modules.customers.website_registration_service.settings") as settings,
+    ):
+        settings.environment = "production"
+        settings.otp_send_sms = False
+
+        result = asyncio.run(service.register(**registration_data))
+
+    assert result["verification_required"] is True
+    send_email.assert_awaited_once_with(registration_data["email"], "123456")
+    send_sms.assert_not_awaited()

@@ -3,7 +3,8 @@
 Provider APIs differ; this client posts a simple JSON body that a thin provider adapter
 (or the provider itself, e.g. Gupshup/Interakt/AiSensy style APIs) understands.
 Without WHATSAPP_PROVIDER_URL the "log" provider is used: the message is only logged and
-reported as sent, so the full flow can be tested locally and on staging.
+reported as sent, so the full flow can be tested locally and on staging. In production a
+missing provider raises WhatsAppError so the message falls back to SMS or shows as failed.
 """
 import hashlib
 import hmac
@@ -29,6 +30,9 @@ def send_message(*, phone: str, text: str, template: str | None, language: str,
                  params: dict[str, str] | None = None) -> str:
     """Returns the provider message id. Raises WhatsAppError on failure."""
     if not is_configured():
+        if settings.is_production:
+            # Production: fail so the outbox tries SMS and shows the message as failed, not "sent".
+            raise WhatsAppError("WhatsApp provider is not configured")
         message_id = f"log-{uuid.uuid4().hex[:12]}"
         log.info("WhatsApp (log provider) to %s***: %s", phone[:4], text[:80])
         return message_id
