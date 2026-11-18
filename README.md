@@ -138,5 +138,5 @@ Two tests in `tests/test_auth_repository.py` need the PostgreSQL from step 1.
 1. Start in **Mode A** (counter keeps billing in TallyPrime; WearVerse imports). POS runs as a **parallel run**:
    bills are saved for comparison only and change no stock, khata or Tally.
 2. After two clean weeks (Tally → Reconciliation shows no differences), the owner switches to **Mode B** in
-   Tally → Sync status. The POS becomes live and the new bill series starts.
+   Tally → Sync status. The POS becomes live and the new bill series Starts.
 3. Rollback: switch back to Mode A; nothing is lost because every voucher waits in the outbox.
